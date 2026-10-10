@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>知识点库</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="sidebar" id="sidebar">
+      <header class="brand">
+        <div class="brand-top">
+          <div class="brand-text">
+            <p class="brand-mark">Notes</p>
+            <h1 class="brand-name">知识点库</h1>
+          </div>
+          <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="折叠导航栏" title="折叠导航栏">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4L10.8 12z"/>
+            </svg>
+          </button>
+        </div>
+        <p class="brand-desc">个人学习摘录</p>
+      </header>
+
+      <nav class="nav" id="nav" aria-label="知识点导航"></nav>
+    </aside>
+
+    <div class="backdrop" id="backdrop" hidden></div>
+
+    <main class="main">
+      <div class="main-bar">
+        <button class="menu-btn" id="menuBtn" type="button" aria-label="打开目录">
+          <span></span><span></span><span></span>
+        </button>
+        <button class="expand-btn" id="expandBtn" type="button" aria-label="展开导航栏" title="展开导航栏" hidden>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path fill="currentColor" d="M8.6 7.4 10 6l6 6-6 6-1.4-1.4L13.2 12z"/>
+          </svg>
+        </button>
+        <p class="crumb" id="crumb"></p>
+      </div>
+
+      <article class="article" id="article">
+        <p class="empty">从左侧选择一条知识点开始阅读。</p>
+      </article>
+    </main>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
