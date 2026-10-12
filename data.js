@@ -1044,8 +1044,8 @@ Vue / Axios
     summary: "注解是标记；先掌握项目里最常用的一批",
     related: [
       "springboot-fullstack-roadmap",
-      "java-object-create-dto",
-      "java-object-json-serialize",
+      "db-isolation-locks",
+      "case-concurrent-withdraw",
       "interceptor-threadlocal",
     ],
     content: `
@@ -1058,9 +1058,9 @@ Vue / Axios
       <pre><code>@RestController
 public class UserController {
 }</code></pre>
-      <p>意思不是「执行一个方法」，而是告诉 Spring：这个类是 Controller，请交给 Spring 管理，并且方法返回值默认作为 HTTP 响应体。</p>
+      <p>意思不是「执行一个方法」，而是告诉 Spring：这个类是 Controller，请交给 Spring 管理，并且方法返回值默认作为 HTTP 响应体。右侧目录可点选跳转到对应注解分类。</p>
 
-      <h2>1. 组件 / Bean 相关</h2>
+      <h2 id="ann-bean" data-toc="组件 / Bean">1. 组件 / Bean 相关</h2>
       <pre><code>@Component   // 普通 Spring 组件
 @Service     // 业务层
 @Repository  // 数据访问层
@@ -1071,7 +1071,7 @@ public class UserController {
         <p><strong>让 Spring 创建并管理这个对象</strong>，也就是注册成 Bean。</p>
       </blockquote>
 
-      <h2>2. 依赖注入</h2>
+      <h2 id="ann-inject" data-toc="依赖注入 @Autowired">2. 依赖注入</h2>
       <pre><code>@Autowired
 private UserService userService;</code></pre>
       <p>意思：从 Spring 容器中找到一个 <code>UserService</code> 对象，注入进来。现在更推荐<strong>构造器注入</strong>：</p>
@@ -1086,7 +1086,7 @@ public class UserController {
     private final UserService userService;
 }</code></pre>
 
-      <h2>3. Controller 接口相关</h2>
+      <h2 id="ann-mapping" data-toc="接口映射 @GetMapping">3. Controller 接口相关</h2>
       <ul>
         <li><code>@RequestMapping("/user")</code>：定义 URL，常放类上</li>
         <li><code>@GetMapping("/list")</code>：GET，一般用于查询</li>
@@ -1095,7 +1095,7 @@ public class UserController {
         <li><code>@DeleteMapping("/{id}")</code>：通常表示删除</li>
       </ul>
 
-      <h2>4. 接收前端参数</h2>
+      <h2 id="ann-params" data-toc="接参 @RequestBody">4. 接收前端参数</h2>
       <h3>@RequestBody — 接 JSON</h3>
       <pre><code>@PostMapping("/add")
 public void add(@RequestBody UserDTO dto) {
@@ -1118,7 +1118,7 @@ public User find(@PathVariable Long id) {
       <pre><code>@RequestHeader("Authorization") String token</code></pre>
       <p>常用于 Token / JWT / 用户认证。</p>
 
-      <h2>5. 参数校验</h2>
+      <h2 id="ann-valid" data-toc="参数校验 @Valid">5. 参数校验</h2>
       <pre><code>public class UserDTO {
     @NotBlank
     private String username;
@@ -1139,7 +1139,7 @@ public void add(@Valid @RequestBody UserDTO dto) {
 @Size      长度限制
 @Pattern   正则校验</pre>
 
-      <h2>6. 配置相关</h2>
+      <h2 id="ann-config" data-toc="配置 @Configuration">6. 配置相关</h2>
       <ul>
         <li><code>@Configuration</code>：配置类</li>
         <li><code>@Bean</code>：手动创建并由 Spring 管理的对象</li>
@@ -1147,7 +1147,7 @@ public void add(@Valid @RequestBody UserDTO dto) {
         <li><code>@ConfigurationProperties</code>：一组配置映射成 Java 对象，复杂配置更合适</li>
       </ul>
 
-      <h2>7. 数据库 / MyBatis</h2>
+      <h2 id="ann-mybatis" data-toc="MyBatis @Mapper">7. 数据库 / MyBatis</h2>
       <pre><code>@Mapper
 public interface UserMapper {
 
@@ -1156,7 +1156,7 @@ public interface UserMapper {
 }</code></pre>
       <p>还有 <code>@Insert</code> / <code>@Update</code> / <code>@Delete</code>。正式项目复杂 SQL 更多用 XML 或 MyBatis-Plus。</p>
 
-      <h2>8. 事务</h2>
+      <h2 id="ann-tx" data-toc="事务 @Transactional">8. 事务</h2>
       <pre><code>@Transactional
 public void transfer() {
 }</code></pre>
@@ -1164,8 +1164,13 @@ public void transfer() {
       <blockquote>
         <p>常见坑：<code>@Transactional</code> 一般需要通过 Spring 代理调用才生效，同类内部直接调用可能导致事务失效。面试很爱问。</p>
       </blockquote>
+      <p>注意：它<strong>不能单独解决多事务并发竞争</strong>（例如两个人同时扣同一账户）。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离性与锁 →</button>
+        <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景解析：并发扣款 →</button>
+      </p>
 
-      <h2>9. 异常处理</h2>
+      <h2 id="ann-exception" data-toc="异常处理 @ExceptionHandler">9. 异常处理</h2>
       <pre><code>@RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -1175,20 +1180,20 @@ public class GlobalExceptionHandler {
     }
 }</code></pre>
 
-      <h2>10. Lombok</h2>
+      <h2 id="ann-lombok" data-toc="Lombok @Data">10. Lombok</h2>
       <p>不是 Spring。常见 <code>@Data</code> 自动生成 getter / setter / toString / equals / hashCode。还有：</p>
       <pre class="flow">@Getter @Setter @Builder
 @NoArgsConstructor @AllArgsConstructor
 @RequiredArgsConstructor @Slf4j</pre>
 
-      <h2>11. JSON 相关（Jackson）</h2>
+      <h2 id="ann-json" data-toc="JSON @JsonProperty">11. JSON 相关（Jackson）</h2>
       <pre><code>@JsonProperty("user_name")
 private String userName;
 
 @JsonIgnore
 private String password; // 不序列化到 JSON</code></pre>
 
-      <h2>12. 定时任务 / 异步</h2>
+      <h2 id="ann-async" data-toc="定时 / 异步 @Async">12. 定时任务 / 异步</h2>
       <pre><code>@EnableScheduling
 @Scheduled(cron = "0 0 1 * * ?")  // 例如每天凌晨 1 点
 
@@ -1196,12 +1201,12 @@ private String password; // 不序列化到 JSON</code></pre>
 @Async  // 放到其他线程执行</code></pre>
       <p>以后会联系到：线程池、ThreadLocal、异步任务。</p>
 
-      <h2>13. AOP</h2>
+      <h2 id="ann-aop" data-toc="AOP @Aspect">13. AOP</h2>
       <pre><code>@Aspect
 @Around / @Before / @After</code></pre>
       <p>常用于：操作日志、接口耗时、权限、统一审计。</p>
 
-      <h2>目前最应该先掌握的</h2>
+      <h2 id="ann-priority" data-toc="优先掌握清单">目前最应该先掌握的</h2>
       <p>别一次背几十个。做 Spring Boot 项目先牢记：</p>
       <pre class="flow">@RestController
 @RequestMapping
@@ -1219,7 +1224,7 @@ private String password; // 不序列化到 JSON</code></pre>
 
 @RestControllerAdvice / @ExceptionHandler</pre>
 
-      <h2>从底层理解注解</h2>
+      <h2 id="ann-principle" data-toc="底层原理">从底层理解注解</h2>
       <pre><code>@Service
 public class UserService {
 }</code></pre>
@@ -1250,8 +1255,8 @@ public class UserService {
     related: [
       "interceptor-threadlocal",
       "java-spring-annotations",
-      "java-object-json-serialize",
-      "sso-single-sign-on",
+      "db-isolation-locks",
+      "case-concurrent-withdraw",
     ],
     content: `
       <span class="article-tag">高并发 / 架构</span>
@@ -1525,15 +1530,157 @@ public void transfer() {
         <blockquote>
           <p>ACID：原子性、一致性、隔离性、持久性。Spring Boot 常用 <code>@Transactional</code> 管理数据库事务。</p>
         </blockquote>
+        <p class="jump-row">
+          <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离性与锁 →</button>
+          <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景解析：并发扣款 →</button>
+        </p>
       </section>
+    `,
+  },
+  {
+    id: "db-isolation-locks",
+    category: "高并发 / 架构",
+    title: "事务隔离性与锁",
+    summary: "隔离性含义；悲观锁、乐观锁、分布式锁",
+    related: [
+      "case-concurrent-withdraw",
+      "seckill-redis-mq",
+      "java-spring-annotations",
+    ],
+    content: `
+      <span class="article-tag">高并发 / 架构</span>
+      <h1>事务隔离性与锁</h1>
+      <p class="lead"><code>@Transactional</code> 能管好<strong>一个事务内部</strong>的成败，但不能单独挡住<strong>多个事务同时改同一行数据</strong>时的竞争。这里补的是并发场景背后的含义：隔离性，以及三种常见锁思路。</p>
 
-      <section class="dig">
-        <div class="dig-head">
-          <span class="dig-label">深挖</span>
-          <p class="dig-ask"><strong>疑问方向（待继续）：</strong>余额 100，两线程同时查到 100 各扣 80——若都成功会怎样？仅 <code>@Transactional</code> 够不够？→ 引出隔离性、并发问题、数据库锁。</p>
-        </div>
-        <p>这道题对话里还没答完，下次继续深挖时补上：事务隔离级别、脏读/不可重复读/幻读、乐观锁与悲观锁、库存条件更新等。</p>
-      </section>
+      <h2 id="iso-meaning" data-toc="隔离性是什么">隔离性 Isolation 是什么</h2>
+      <p>ACID 里的 <strong>I</strong>：多个事务并发执行时，控制它们互相看到什么、能不能互相踩脚。</p>
+      <pre class="flow">原子性：我这一组操作要么全成要么全败
+隔离性：别人同时跑的时候，别把我的中间状态搞乱</pre>
+      <p>所以会出现经典并发问题（后续可继续深挖各级隔离级别）：</p>
+      <ul>
+        <li><strong>脏读</strong>：读到别人还没提交的数据</li>
+        <li><strong>不可重复读</strong>：同一事务里两次读同一行，结果不同（被人改了）</li>
+        <li><strong>幻读</strong>：同一条件两次查询，行数变了（被人插入/删除）</li>
+      </ul>
+      <p>实际开发里，更常直接面对的是：<strong>读-改-写竞态</strong>（先查余额再扣款，两人都以为够扣）。</p>
+
+      <h2 id="iso-vs-tx" data-toc="@Transactional 的边界">@Transactional 的边界</h2>
+      <blockquote>
+        <p><strong>@Transactional 可以保证一个事务内部的一致性，但不能阻止多个事务同时执行产生的数据竞争。</strong></p>
+      </blockquote>
+      <p>它保证的是「自己这组 SQL 的事务规则」，不是「同一时刻全世界只有我能改这行」。</p>
+
+      <h2 id="iso-pessimistic" data-toc="悲观锁 / 行锁">悲观锁：数据库行锁</h2>
+      <p>假设会冲突，先锁再改。MySQL 常见：</p>
+      <pre><code>SELECT * FROM account WHERE id = 1 FOR UPDATE;</code></pre>
+      <pre class="flow">A 锁行 → 扣款 → 提交放锁
+B 等待 → 再读最新余额 → 再判断</pre>
+      <p>适合冲突概率高、必须强一致的账户/库存关键路径；代价是等待与吞吐下降。</p>
+
+      <h2 id="iso-optimistic" data-toc="乐观锁 version">乐观锁：version / 条件更新</h2>
+      <p>假设冲突不多，更新时带上「我读到的版本」：</p>
+      <pre><code>UPDATE account
+SET balance = 20, version = version + 1
+WHERE id = 1 AND version = 1;</code></pre>
+      <p>影响行数为 0 就表示被人抢先改过了，需要重试或失败返回。互联网业务很常用。</p>
+
+      <h2 id="iso-distributed" data-toc="分布式锁">分布式锁（Redis 等）</h2>
+      <p>当临界区跨多个服务、不止一个数据库时，单库行锁管不过来，常用 Redis：</p>
+      <pre><code>SET lock:user:1001 NX EX 30</code></pre>
+      <p>拿到锁的实例才能进入关键逻辑。注意锁超时、续期、误删别人的锁等工程细节。</p>
+
+      <h2 id="iso-chain" data-toc="和秒杀链路的关系">和秒杀链路怎么拼</h2>
+      <pre class="flow">高并发请求
+    ↓
+Redis 限流 / 预扣（挡大部分）
+    ↓
+MQ 异步削峰
+    ↓
+数据库事务 + 锁 / 条件更新
+    ↓
+最终一致</pre>
+
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景解析：并发扣款与 @Transactional →</button>
+        <button class="jump-link" type="button" data-id="seckill-redis-mq">回到：秒杀架构 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "case-concurrent-withdraw",
+    category: "场景解析",
+    title: "并发扣款与 @Transactional",
+    summary: "两线程同时扣余额；事务不够时怎么锁",
+    related: [
+      "db-isolation-locks",
+      "seckill-redis-mq",
+      "java-spring-annotations",
+    ],
+    content: `
+      <span class="article-tag">场景解析</span>
+      <h1>并发扣款与 @Transactional</h1>
+      <p class="lead">对应问题：余额 100，两线程同时查到 100 各扣 80——都会成功吗？只有 <code>@Transactional</code> 够不够？</p>
+
+      <div class="case-answer">
+        <p class="case-answer-title">你的回答要点</p>
+        <p>已经抓到关键点：<strong>@Transactional 不能解决所有并发问题</strong>。表述「只能保证一个事务」需修正为：</p>
+        <blockquote>
+          <p><strong>@Transactional 可以保证一个事务内部的一致性，但是不能阻止多个事务同时执行产生的数据竞争问题。</strong></p>
+        </blockquote>
+      </div>
+
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="db-isolation-locks">先看含义：事务隔离性与锁 →</button>
+      </p>
+
+      <h2 id="case-scene" data-toc="场景还原">场景还原</h2>
+      <pre class="flow">账户余额 = 100
+
+线程A：查到 100 ≥ 80，准备扣 80
+线程B：查到 100 ≥ 80，准备扣 80
+
+无额外控制 → 可能 100-80-80 = -60
+（并发更新 / 超卖类问题）</pre>
+
+      <h2 id="case-why" data-toc="为什么事务不够">为什么 @Transactional 不管用？</h2>
+      <pre><code>@Transactional
+public void withdraw(Long userId, int money){
+    Account account = queryAccount(userId);
+    if(account.getBalance() >= money){
+        updateBalance(userId, money);
+    }
+}</code></pre>
+      <pre class="flow">事务A 查余额 100
+事务B 查余额 100
+事务A 扣 80
+事务B 扣 80
+→ 两人都认为合法</pre>
+      <p>事务保证：自己的操作全部成功或全部失败。它没有说：别人不能同时操作。所以需要隔离性 + 锁。</p>
+
+      <h2 id="case-rowlock" data-toc="方案：行锁">方案 1：数据库行锁</h2>
+      <pre><code>select * from account where id=1 for update;</code></pre>
+      <pre class="flow">线程A → select for update → 锁住账户 → 扣款 → 提交 → 放锁
+线程B → 等待 → 再查余额 20 → 不足 → 失败</pre>
+
+      <h2 id="case-version" data-toc="方案：乐观锁">方案 2：乐观锁</h2>
+      <pre><code>update account
+set balance=20, version=version+1
+where id=1 and version=1;</code></pre>
+      <p>A 把 version 1→2 成功后，B 仍用 version=1 更新失败。</p>
+
+      <h2 id="case-redislock" data-toc="方案：分布式锁">方案 3：Redis 分布式锁</h2>
+      <p>多服务场景下单库锁不够时，用 <code>SET lock:user:1001 NX</code> 这类分布式锁串行化临界区。</p>
+
+      <h2 id="case-interview" data-toc="面试回答">面试回答</h2>
+      <blockquote>
+        <p><code>@Transactional</code> 主要保证单个事务的原子性、一致性、隔离性和持久性，但不能完全解决多个事务并发访问导致的数据竞争。针对并发修改，需要结合数据库锁、乐观锁、悲观锁或分布式锁。</p>
+      </blockquote>
+
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离性与锁 →</button>
+        <button class="jump-link" type="button" data-id="seckill-redis-mq">相关：秒杀架构 →</button>
+        <button class="jump-link" type="button" data-id="java-spring-annotations/ann-tx">相关：@Transactional 注解 →</button>
+      </p>
     `,
   },
 ];

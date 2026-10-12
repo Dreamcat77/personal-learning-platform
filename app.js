@@ -9,12 +9,16 @@
   const expandBtn = document.getElementById("expandBtn");
   const sidebarToggle = document.getElementById("sidebarToggle");
   const backdropEl = document.getElementById("backdrop");
+  const tocEl = document.getElementById("toc");
+  const tocNavEl = document.getElementById("tocNav");
 
   const SIDEBAR_KEY = "notes-sidebar-collapsed";
   const GROUPS_KEY = "notes-group-collapsed";
 
   const byId = Object.fromEntries(knowledge.map((item) => [item.id, item]));
   let groupCollapsed = loadGroupState();
+  let tocObserver = null;
+  let currentArticleId = null;
 
   function loadGroupState() {
     try {
@@ -55,6 +59,93 @@
   function openMobileSidebar() {
     sidebarEl.classList.add("open");
     backdropEl.hidden = false;
+  }
+
+  function slugify(text) {
+    return (
+      "sec-" +
+      text
+        .toLowerCase()
+        .replace(/[^\w\u4e00-\u9fff]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 40)
+    );
+  }
+
+  function collectHeadings() {
+    return Array.from(articleEl.querySelectorAll("h2")).filter(
+      (h) => h.textContent && h.textContent.trim()
+    );
+  }
+
+  function setActiveToc(id) {
+    tocNavEl.querySelectorAll(".toc-item").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.target === id);
+    });
+  }
+
+  function scrollToSection(id) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    setActiveToc(id);
+    if (currentArticleId) {
+      history.replaceState(null, "", `#${currentArticleId}/${id}`);
+    }
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function renderToc() {
+    if (tocObserver) {
+      tocObserver.disconnect();
+      tocObserver = null;
+    }
+
+    const headings = collectHeadings();
+    tocNavEl.innerHTML = "";
+
+    if (headings.length < 2) {
+      tocEl.hidden = true;
+      appEl.classList.remove("has-toc");
+      return;
+    }
+
+    tocEl.hidden = false;
+    appEl.classList.add("has-toc");
+
+    headings.forEach((heading, index) => {
+      if (!heading.id) {
+        heading.id = slugify(heading.textContent.trim()) || `sec-${index}`;
+      }
+
+      const label =
+        heading.getAttribute("data-toc") || heading.textContent.trim();
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toc-item";
+      btn.dataset.target = heading.id;
+      btn.textContent = label;
+      btn.addEventListener("click", () => scrollToSection(heading.id));
+      tocNavEl.appendChild(btn);
+    });
+
+    tocObserver = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0] && visible[0].target.id) {
+          setActiveToc(visible[0].target.id);
+        }
+      },
+      {
+        rootMargin: "-20% 0px -65% 0px",
+        threshold: [0, 0.25, 0.5, 1],
+      }
+    );
+
+    headings.forEach((heading) => tocObserver.observe(heading));
+    setActiveToc(headings[0].id);
   }
 
   function renderNav(activeId) {
@@ -125,7 +216,17 @@
     return `<div class="related"><p class="related-title">相关知识点</p>${links}</div>`;
   }
 
-  function selectItem(id) {
+  function bindArticleLinks() {
+    articleEl.querySelectorAll(".related-link, .jump-link").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.id || "";
+        const [articleId, sectionId] = target.split("/");
+        if (articleId && byId[articleId]) selectItem(articleId, sectionId);
+      });
+    });
+  }
+
+  function selectItem(id, sectionId) {
     const item = byId[id];
     if (!item) return;
 
@@ -134,7 +235,12 @@
       saveGroupState();
     }
 
-    history.replaceState(null, "", `#${id}`);
+    currentArticleId = id;
+    history.replaceState(
+      null,
+      "",
+      sectionId ? `#${id}/${sectionId}` : `#${id}`
+    );
     renderNav(id);
     crumbEl.textContent = `${item.category} / ${item.title}`;
     articleEl.innerHTML = item.content + renderRelated(item);
@@ -142,12 +248,15 @@
     void articleEl.offsetWidth;
     articleEl.style.animation = "";
 
-    articleEl.querySelectorAll(".related-link").forEach((btn) => {
-      btn.addEventListener("click", () => selectItem(btn.dataset.id));
-    });
-
+    bindArticleLinks();
+    renderToc();
     closeMobileSidebar();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    if (sectionId && document.getElementById(sectionId)) {
+      requestAnimationFrame(() => scrollToSection(sectionId));
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   sidebarToggle.addEventListener("click", () => {
@@ -184,18 +293,20 @@
   if (!isMobile()) setSidebarCollapsed(initialCollapsed);
   else expandBtn.hidden = true;
 
-  const initialId =
-    (location.hash && location.hash.slice(1)) ||
-    (knowledge[0] && knowledge[0].id);
+  const rawHash = location.hash ? location.hash.slice(1) : "";
+  const [hashId, hashSection] = rawHash.split("/");
+  const initialId = hashId || (knowledge[0] && knowledge[0].id);
 
   if (initialId && byId[initialId]) {
-    selectItem(initialId);
+    selectItem(initialId, hashSection);
   } else {
     renderNav(null);
+    tocEl.hidden = true;
   }
 
   window.addEventListener("hashchange", () => {
-    const id = location.hash.slice(1);
-    if (id && byId[id]) selectItem(id);
+    const raw = location.hash.slice(1);
+    const [id, section] = raw.split("/");
+    if (id && byId[id]) selectItem(id, section);
   });
 })();
