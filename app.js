@@ -1,5 +1,6 @@
 (function () {
   const knowledge = window.KNOWLEDGE || [];
+  const categoryOrder = window.KNOWLEDGE_CATEGORIES || [];
   const appEl = document.getElementById("app");
   const navEl = document.getElementById("nav");
   const articleEl = document.getElementById("article");
@@ -38,7 +39,25 @@
       if (!map.has(item.category)) map.set(item.category, []);
       map.get(item.category).push(item);
     });
-    return map;
+
+    map.forEach((groupItems) => {
+      groupItems.sort(
+        (a, b) =>
+          (a.order ?? Number.MAX_SAFE_INTEGER) -
+            (b.order ?? Number.MAX_SAFE_INTEGER) ||
+          a.title.localeCompare(b.title, "zh-CN")
+      );
+    });
+
+    const rank = new Map(categoryOrder.map((category, index) => [category, index]));
+    return new Map(
+      [...map.entries()].sort(
+        ([categoryA], [categoryB]) =>
+          (rank.get(categoryA) ?? Number.MAX_SAFE_INTEGER) -
+            (rank.get(categoryB) ?? Number.MAX_SAFE_INTEGER) ||
+          categoryA.localeCompare(categoryB, "zh-CN")
+      )
+    );
   }
 
   function isMobile() {
@@ -295,7 +314,8 @@
 
   const rawHash = location.hash ? location.hash.slice(1) : "";
   const [hashId, hashSection] = rawHash.split("/");
-  const initialId = hashId || (knowledge[0] && knowledge[0].id);
+  const firstGroup = groupByCategory(knowledge).values().next().value;
+  const initialId = hashId || (firstGroup && firstGroup[0] && firstGroup[0].id);
 
   if (initialId && byId[initialId]) {
     selectItem(initialId, hashSection);

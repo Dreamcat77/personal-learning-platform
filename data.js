@@ -1,13 +1,25 @@
+window.KNOWLEDGE_CATEGORIES = [
+  "学习路线",
+  "Java 基础",
+  "Spring Boot",
+  "Linux 与运维",
+  "认证与安全",
+  "数据库与事务",
+  "高并发与架构",
+  "其他小问题",
+];
+
 window.KNOWLEDGE = [
   {
     id: "interceptor-threadlocal",
-    category: "Java / Spring",
-    title: "拦截器与 ThreadLocal",
-    summary: "请求统一处理 + 当前线程用户上下文",
+    category: "Spring Boot",
+    order: 20,
+    title: "请求拦截与用户上下文",
+    summary: "用 Interceptor 和 ThreadLocal 管理当前登录用户",
     related: ["sso-single-sign-on"],
     content: `
-      <span class="article-tag">Java / Spring</span>
-      <h1>拦截器与 ThreadLocal</h1>
+      <span class="article-tag">Spring Boot</span>
+      <h1>请求拦截与用户上下文</h1>
       <p class="lead">这两个经常一起用，但不是一回事。<strong>拦截器</strong>负责「在请求进 Controller 前后做统一处理」；<strong>ThreadLocal</strong>负责「在当前线程里临时保存数据」。</p>
 
       <h2>典型组合：登录用户上下文</h2>
@@ -195,12 +207,13 @@ Controller</pre>
   {
     id: "sso-single-sign-on",
     category: "认证与安全",
-    title: "单点登录 SSO",
-    summary: "登录一次，访问多个相互独立的系统",
+    order: 10,
+    title: "单点登录（SSO）",
+    summary: "统一认证中心如何让多个系统共享登录状态",
     related: ["interceptor-threadlocal"],
     content: `
       <span class="article-tag">认证与安全</span>
-      <h1>单点登录 SSO</h1>
+      <h1>单点登录（SSO）</h1>
       <p class="lead"><strong>单点登录 = SSO（Single Sign-On）</strong>。先记一句：</p>
       <blockquote>
         <p><strong>用户只登录一次，就可以访问多个相互独立的系统。</strong></p>
@@ -314,13 +327,14 @@ SSO：
   },
   {
     id: "java-object-json-serialize",
-    category: "Java / Spring",
-    title: "Java对象 · 序列化 · 反序列化 · JSON",
-    summary: "对象与 JSON 互转，前后端请求链路基础",
+    category: "Java 基础",
+    order: 10,
+    title: "Java 对象、JSON 与序列化",
+    summary: "理解对象与 JSON 的双向转换及请求链路",
     related: ["java-object-create-dto"],
     content: `
-      <span class="article-tag">Java / Spring</span>
-      <h1>Java对象 · 序列化 · 反序列化 · JSON</h1>
+      <span class="article-tag">Java 基础</span>
+      <h1>Java 对象、JSON 与序列化</h1>
       <p class="lead">这几个概念要连着理解，尤其在 Java 后端里，和 JSON 关系非常大。</p>
 
       <h2>1. Java 对象</h2>
@@ -508,13 +522,14 @@ JSON → Java对象
   },
   {
     id: "java-object-create-dto",
-    category: "Java / Spring",
-    title: "对象的创建与 DTO 建模",
-    summary: "new 创建对象、按 JSON 建模、Controller 接参",
+    category: "Java 基础",
+    order: 20,
+    title: "对象创建、DTO 与参数映射",
+    summary: "从 new 对象到按 JSON 建模和 Controller 接参",
     related: ["java-object-json-serialize"],
     content: `
-      <span class="article-tag">Java / Spring</span>
-      <h1>对象的创建与 DTO 建模</h1>
+      <span class="article-tag">Java 基础</span>
+      <h1>对象创建、DTO 与参数映射</h1>
       <p class="lead">对象的创建，核心就是这句：</p>
       <pre><code>User user = new User();</code></pre>
       <p>拆成三部分理解：</p>
@@ -789,18 +804,21 @@ Service    → 真正的业务逻辑</pre>
   },
   {
     id: "springboot-fullstack-roadmap",
-    category: "项目实战",
-    title: "从 0 到 1：Spring Boot 前后端项目",
-    summary: "Vue + Spring Boot + MySQL 完整请求链路与阶段拆解",
+    category: "学习路线",
+    order: 20,
+    title: "Spring Boot 全栈项目：从 0 到 1",
+    summary: "用 Vue、Spring Boot 和 MySQL 串起完整请求链路",
     related: [
+      "learning-path-crud-first",
       "java-object-create-dto",
       "java-object-json-serialize",
       "interceptor-threadlocal",
-      "sso-single-sign-on",
+      "linux-common-commands",
+      "springboot-user-admin-crud",
     ],
     content: `
-      <span class="article-tag">项目实战</span>
-      <h1>从 0 到 1：Spring Boot 前后端项目</h1>
+      <span class="article-tag">学习路线</span>
+      <h1>Spring Boot 全栈项目：从 0 到 1</h1>
       <p class="lead">现在最适合的不是继续零散背知识点，而是<strong>亲手从 0 做一个完整 Spring Boot 前后端项目</strong>，过程中遇到什么再把底层知识补进去。</p>
 
       <h2>技术组合</h2>
@@ -1038,10 +1056,285 @@ Vue / Axios
     `,
   },
   {
+    id: "springboot-user-admin-crud",
+    category: "Spring Boot",
+    order: 30,
+    title: "用户管理 CRUD：从项目创建到查询列表",
+    summary: "用 Spring Boot、MyBatis 和 MySQL 跑通第一条后端请求链路",
+    related: [
+      "springboot-fullstack-roadmap",
+      "java-spring-annotations",
+      "java-object-json-serialize",
+      "java-object-create-dto",
+      "what-is-intellij-idea",
+    ],
+    content: `
+      <span class="article-tag">Spring Boot · 项目实战</span>
+      <h1>用户管理 CRUD：从项目创建到查询列表</h1>
+      <p class="lead">这个项目的第一阶段目标不是一次写完所有功能，而是先跑通 <strong>HTTP 请求 → Controller → Service → Mapper → MySQL → JSON 响应</strong>。目前已经完成查询列表，也就是 CRUD 中的 Read；下一步再补新增、修改和删除。</p>
+
+      <h2 id="user-admin-goal" data-toc="目标与学习方式">项目目标与学习方式</h2>
+      <p>用需求带动知识学习：</p>
+      <pre class="flow">遇到需求
+  ↓
+先写出可运行的代码
+  ↓
+遇到问题时补对应理论
+  ↓
+理解并修正代码
+  ↓
+继续下一个功能</pre>
+      <p>阶段目标是能独立解释并实现：</p>
+      <pre class="flow">Controller：接收请求、返回结果
+      ↓
+Service：组织业务逻辑
+      ↓
+Mapper：执行数据库操作
+      ↓
+MySQL：保存业务数据</pre>
+
+      <h2 id="user-admin-environment" data-toc="环境与技术栈">环境与技术栈</h2>
+      <table>
+        <thead><tr><th>工具 / 技术</th><th>本项目中的作用</th></tr></thead>
+        <tbody>
+          <tr><td>Windows 11</td><td>本地开发环境</td></tr>
+          <tr><td>IntelliJ IDEA</td><td>编写、运行和调试代码</td></tr>
+          <tr><td>JDK 21</td><td>编译和运行 Java</td></tr>
+          <tr><td>Spring Boot</td><td>搭建 Web 后端应用</td></tr>
+          <tr><td>Maven</td><td>管理依赖、编译和打包</td></tr>
+          <tr><td>MyBatis</td><td>通过 Mapper 执行 SQL</td></tr>
+          <tr><td>Docker MySQL</td><td>提供本地数据库服务</td></tr>
+          <tr><td>Lombok</td><td>减少 getter、setter 等模板代码</td></tr>
+        </tbody>
+      </table>
+      <p>笔记中验证过的组合是 Spring Boot 3.5.6、JDK 21、MyBatis 3.0.4 和 MySQL 8。它代表该项目当时可工作的版本组合，不意味着其他版本一定不能使用；新项目应优先按 Spring Initializr 和各组件官方兼容说明选择版本。</p>
+
+      <h2 id="user-admin-structure" data-toc="项目结构">创建项目与目录结构</h2>
+      <pre class="flow">user-admin/
+├── pom.xml
+└── src/main/
+    ├── java/com/example/useradmin/
+    │   ├── UserAdminApplication.java
+    │   ├── controller/
+    │   ├── service/
+    │   ├── mapper/
+    │   └── entity/
+    └── resources/
+        └── application.yml</pre>
+      <p><code>pom.xml</code> 描述项目依赖和构建方式；Java 代码放在 <code>src/main/java</code>，配置文件放在 <code>src/main/resources</code>。</p>
+
+      <h2 id="user-admin-startup" data-toc="启动过程">Spring Boot 如何启动</h2>
+      <pre><code>@SpringBootApplication
+public class UserAdminApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(UserAdminApplication.class, args);
+    }
+}</code></pre>
+      <pre class="flow">执行 main 方法
+  ↓
+SpringApplication.run()
+  ↓
+创建 Spring 容器
+  ↓
+从启动类所在包向下扫描组件
+  ↓
+创建并管理 Bean
+  ↓
+启动内嵌 Web 服务器
+  ↓
+监听端口，等待 HTTP 请求</pre>
+      <p><code>@SpringBootApplication</code> 是组合注解，包含自动配置、组件扫描和配置类等能力。Spring Boot 3 默认使用内嵌 Tomcat，但也可以替换为其他受支持的 Web 服务器。</p>
+
+      <h2 id="user-admin-hello" data-toc="第一个接口">第一个 Hello 接口</h2>
+      <pre><code>@RestController
+public class HelloController {
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello Spring Boot";
+    }
+}</code></pre>
+      <p>访问 <code>GET http://localhost:8080/hello</code> 时，Spring 根据路径找到 <code>hello()</code> 方法，并把返回值写入 HTTP 响应。</p>
+      <ul>
+        <li><code>@RestController</code>：声明这个类负责处理 Web 请求，方法返回值直接作为响应体。</li>
+        <li><code>@GetMapping("/hello")</code>：把 GET 请求路径映射到这个方法。</li>
+        <li><code>return</code>：返回给客户端的数据，不是页面跳转。</li>
+      </ul>
+
+      <h2 id="user-admin-json" data-toc="对象返回 JSON">Java 对象为什么变成 JSON</h2>
+      <pre><code>@Data
+public class User {
+    private Long id;
+    private String username;
+    private Integer age;
+}</code></pre>
+      <pre><code>@GetMapping("/user")
+public User user() {
+    User user = new User();
+    user.setId(1L);
+    user.setUsername("张三");
+    user.setAge(20);
+    return user;
+}</code></pre>
+      <pre class="flow">Controller 返回 User 对象
+  ↓
+Spring MVC 选择消息转换器
+  ↓
+Jackson 将对象序列化
+  ↓
+HTTP 响应中的 JSON</pre>
+      <p><code>@Data</code> 由 Lombok 提供，通常会生成 getter、setter、<code>toString</code>、<code>equals</code> 和 <code>hashCode</code>。它减少模板代码，但对象和方法仍然真实存在于编译结果中。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="java-object-json-serialize">深入：Java 对象、JSON 与序列化 →</button>
+        <button class="jump-link" type="button" data-id="java-spring-annotations/ann-lombok">相关：Lombok @Data →</button>
+      </p>
+
+      <h2 id="user-admin-database" data-toc="数据库与连接">创建数据库并配置连接</h2>
+      <pre><code>CREATE DATABASE user_admin;
+USE user_admin;
+
+CREATE TABLE user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL,
+    age INT
+);
+
+INSERT INTO user (username, age)
+VALUES ('Zhangsan', 20), ('Lisi', 22);
+
+SELECT * FROM user;</code></pre>
+      <p>学习项目可以让 Entity 字段先与表字段保持一致。真实项目中还要考虑唯一约束、非空约束、字段长度、创建时间和数据是否允许为空。</p>
+      <pre><code>spring:
+  application:
+    name: user-admin
+  datasource:
+    url: jdbc:mysql://localhost:3306/user_admin
+    username: root
+    password: \${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver</code></pre>
+      <p>JDBC URL 可以拆成：</p>
+      <pre class="flow">jdbc:mysql://localhost:3306/user_admin
+协议与驱动   主机名    端口   数据库名</pre>
+      <blockquote>
+        <p>示例使用环境变量 <code>DB_PASSWORD</code>，避免把真实数据库密码提交到 Git。若本地暂时直接填写密码，也不要把包含密码的配置推送到远程仓库。</p>
+      </blockquote>
+
+      <h2 id="user-admin-query" data-toc="查询完整链路">Mapper、Service、Controller 查询链路</h2>
+      <h3>Mapper：访问数据库</h3>
+      <pre><code>@Mapper
+public interface UserMapper {
+
+    @Select("SELECT id, username, age FROM user")
+    List&lt;User&gt; selectAll();
+}</code></pre>
+      <h3>Service：组织业务</h3>
+      <pre><code>@Service
+public class UserService {
+
+    private final UserMapper userMapper;
+
+    public UserService(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
+
+    public List&lt;User&gt; list() {
+        return userMapper.selectAll();
+    }
+}</code></pre>
+      <p>这里使用构造器注入：依赖明确、便于测试，也不需要在字段上使用 <code>@Autowired</code>。</p>
+      <h3>Controller：暴露接口</h3>
+      <pre><code>@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping
+    public List&lt;User&gt; list() {
+        return userService.list();
+    }
+}</code></pre>
+      <p>访问 <code>GET /users</code> 后，完整执行过程是：</p>
+      <pre class="flow">客户端发送请求
+  ↓
+内嵌 Tomcat 接收连接
+  ↓
+DispatcherServlet 分发请求
+  ↓
+UserController.list()
+  ↓
+UserService.list()
+  ↓
+UserMapper.selectAll()
+  ↓
+MySQL 返回数据
+  ↓
+MyBatis 映射为 List&lt;User&gt;
+  ↓
+Jackson 序列化为 JSON
+  ↓
+返回客户端</pre>
+
+      <h2 id="user-admin-troubleshooting" data-toc="常见错误排查">两个常见启动错误</h2>
+      <h3>找不到 UserMapper Bean</h3>
+      <pre><code>required a bean of type 'UserMapper' that could not be found</code></pre>
+      <p>先确认 Mapper 接口带有 <code>@Mapper</code>，并且位于启动类所在包或其子包。也可以在配置类或启动类上统一使用：</p>
+      <pre><code>@MapperScan("com.example.useradmin.mapper")</code></pre>
+      <h3>缺少 SqlSessionFactory 或 SqlSessionTemplate</h3>
+      <pre><code>Property 'sqlSessionFactory' or 'sqlSessionTemplate' are required</code></pre>
+      <p>这通常表示 MyBatis 自动配置没有正确生效。依次检查：</p>
+      <ol>
+        <li>是否引入适配当前 Spring Boot 版本的 MyBatis Spring Boot Starter，而不是只引入 MyBatis 核心包。</li>
+        <li>数据源 URL、账号、密码和 MySQL 驱动是否正确。</li>
+        <li>Maven 是否成功加载依赖，是否混用了不兼容的 starter 版本。</li>
+        <li>是否手动定义了不完整的 MyBatis 配置，覆盖了自动配置。</li>
+      </ol>
+      <p>把项目切换到一组已验证版本可以帮助定位问题，但不能简单归因于“某个 Spring Boot 大版本一定和 MyBatis 不兼容”。根因仍应以依赖树和启动日志为准。</p>
+
+      <h2 id="user-admin-next" data-toc="下一步：完成 CRUD">下一步：补齐完整 CRUD</h2>
+      <p>CRUD 分别是 Create、Read、Update、Delete。目前只完成了查询列表（Read）：</p>
+      <table>
+        <thead><tr><th>能力</th><th>HTTP 接口</th><th>SQL</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td>查询列表</td><td><code>GET /users</code></td><td><code>SELECT</code></td><td>已完成</td></tr>
+          <tr><td>新增用户</td><td><code>POST /users</code></td><td><code>INSERT</code></td><td>下一步</td></tr>
+          <tr><td>修改用户</td><td><code>PUT /users/{id}</code></td><td><code>UPDATE</code></td><td>待完成</td></tr>
+          <tr><td>删除用户</td><td><code>DELETE /users/{id}</code></td><td><code>DELETE</code></td><td>待完成</td></tr>
+        </tbody>
+      </table>
+      <p>新增和修改接口不要直接把数据库 Entity 当作所有请求参数，下一步应建立 <code>UserCreateRequest</code>、<code>UserUpdateRequest</code> 等 DTO，并补充参数校验、统一异常处理和接口测试。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="java-object-create-dto">下一步基础：DTO 与参数映射 →</button>
+        <button class="jump-link" type="button" data-id="java-spring-annotations/ann-params">相关：@RequestBody 接收参数 →</button>
+        <button class="jump-link" type="button" data-id="java-spring-annotations/ann-valid">相关：参数校验 →</button>
+      </p>
+
+      <h2 id="user-admin-interview" data-toc="面试表达">面试怎么表达</h2>
+      <h3>Spring Boot 请求流程</h3>
+      <blockquote>
+        <p>客户端请求先由内嵌 Web 服务器接收，再交给 Spring MVC 的 DispatcherServlet。DispatcherServlet 根据映射找到 Controller 方法，Controller 调用 Service 处理业务，Service 调用 Mapper 访问数据库。查询结果映射为 Java 对象后，由消息转换器序列化成 JSON 返回客户端。</p>
+      </blockquote>
+      <h3>三层架构</h3>
+      <blockquote>
+        <p>Controller 负责协议层的请求和响应，Service 负责业务规则与流程，Mapper 负责数据访问。分层可以降低职责耦合，让代码更容易维护和测试。</p>
+      </blockquote>
+      <h3>MyBatis</h3>
+      <blockquote>
+        <p>MyBatis 是持久层框架，通过 Mapper 和 SQL 映射帮助 Java 程序访问数据库，减少手写 JDBC 的连接管理、参数设置和结果集转换代码，同时保留对 SQL 的直接控制。</p>
+      </blockquote>
+    `,
+  },
+  {
     id: "java-spring-annotations",
-    category: "Java / Spring",
-    title: "各类 @ 注解",
-    summary: "注解是标记；先掌握项目里最常用的一批",
+    category: "Spring Boot",
+    order: 10,
+    title: "Spring Boot 常用注解",
+    summary: "按用途掌握组件、接口、校验、事务等常用注解",
     related: [
       "springboot-fullstack-roadmap",
       "db-isolation-locks",
@@ -1049,8 +1342,8 @@ Vue / Axios
       "interceptor-threadlocal",
     ],
     content: `
-      <span class="article-tag">Java / Spring</span>
-      <h1>各类 @ 注解</h1>
+      <span class="article-tag">Spring Boot</span>
+      <h1>Spring Boot 常用注解</h1>
       <p class="lead">在 Java 后端里，<code>@xxx</code> 叫<strong>注解 Annotation</strong>。你可以先把它理解成：</p>
       <blockquote>
         <p><strong>给类、方法、字段、参数加「标记」，让编译器或 Spring 知道该怎么处理它。</strong></p>
@@ -1166,7 +1459,7 @@ public void transfer() {
       </blockquote>
       <p>注意：它<strong>不能单独解决多事务并发竞争</strong>（例如两个人同时扣同一账户）。</p>
       <p class="jump-row">
-        <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离性与锁 →</button>
+        <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离与并发锁 →</button>
         <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景解析：并发扣款 →</button>
       </p>
 
@@ -1249,9 +1542,10 @@ public class UserService {
   },
   {
     id: "seckill-redis-mq",
-    category: "高并发 / 架构",
-    title: "秒杀：网关 · Redis · MQ · 幂等 · 事务",
-    summary: "鉴权削峰、原子扣库存、异步落库与最终一致性",
+    category: "高并发与架构",
+    order: 10,
+    title: "秒杀系统：Redis、MQ 与一致性",
+    summary: "从鉴权削峰到原子扣库存、异步落库和最终一致性",
     related: [
       "interceptor-threadlocal",
       "java-spring-annotations",
@@ -1259,8 +1553,8 @@ public class UserService {
       "case-concurrent-withdraw",
     ],
     content: `
-      <span class="article-tag">高并发 / 架构</span>
-      <h1>秒杀：网关 · Redis · MQ · 幂等 · 事务</h1>
+      <span class="article-tag">高并发与架构</span>
+      <h1>秒杀系统：Redis、MQ 与一致性</h1>
       <p class="lead">这是 Java 后端非常经典的架构：<strong>高并发秒杀 = 网关鉴权 + Redis 原子扣库存 + MQ 异步削峰 + MySQL 最终落库</strong>。整体思路对，但有几个底层概念必须分清。</p>
 
       <h2>一、完整请求流程</h2>
@@ -1531,7 +1825,7 @@ public void transfer() {
           <p>ACID：原子性、一致性、隔离性、持久性。Spring Boot 常用 <code>@Transactional</code> 管理数据库事务。</p>
         </blockquote>
         <p class="jump-row">
-          <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离性与锁 →</button>
+          <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离与并发锁 →</button>
           <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景解析：并发扣款 →</button>
         </p>
       </section>
@@ -1539,17 +1833,18 @@ public void transfer() {
   },
   {
     id: "db-isolation-locks",
-    category: "高并发 / 架构",
-    title: "事务隔离性与锁",
-    summary: "隔离性含义；悲观锁、乐观锁、分布式锁",
+    category: "数据库与事务",
+    order: 10,
+    title: "事务隔离与并发锁",
+    summary: "理解事务边界，以及悲观锁、乐观锁和分布式锁",
     related: [
       "case-concurrent-withdraw",
       "seckill-redis-mq",
       "java-spring-annotations",
     ],
     content: `
-      <span class="article-tag">高并发 / 架构</span>
-      <h1>事务隔离性与锁</h1>
+      <span class="article-tag">数据库与事务</span>
+      <h1>事务隔离与并发锁</h1>
       <p class="lead"><code>@Transactional</code> 能管好<strong>一个事务内部</strong>的成败，但不能单独挡住<strong>多个事务同时改同一行数据</strong>时的竞争。这里补的是并发场景背后的含义：隔离性，以及三种常见锁思路。</p>
 
       <h2 id="iso-meaning" data-toc="隔离性是什么">隔离性 Isolation 是什么</h2>
@@ -1601,24 +1896,25 @@ MQ 异步削峰
 最终一致</pre>
 
       <p class="jump-row">
-        <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景解析：并发扣款与 @Transactional →</button>
+        <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景解析：并发扣款为何还需要锁 →</button>
         <button class="jump-link" type="button" data-id="seckill-redis-mq">回到：秒杀架构 →</button>
       </p>
     `,
   },
   {
     id: "case-concurrent-withdraw",
-    category: "场景解析",
-    title: "并发扣款与 @Transactional",
-    summary: "两线程同时扣余额；事务不够时怎么锁",
+    category: "数据库与事务",
+    order: 20,
+    title: "并发扣款：事务为什么不够",
+    summary: "用两线程扣余额场景理解事务与并发控制",
     related: [
       "db-isolation-locks",
       "seckill-redis-mq",
       "java-spring-annotations",
     ],
     content: `
-      <span class="article-tag">场景解析</span>
-      <h1>并发扣款与 @Transactional</h1>
+      <span class="article-tag">数据库与事务 · 场景解析</span>
+      <h1>并发扣款：事务为什么不够</h1>
       <p class="lead">对应问题：余额 100，两线程同时查到 100 各扣 80——都会成功吗？只有 <code>@Transactional</code> 够不够？</p>
 
       <div class="case-answer">
@@ -1630,7 +1926,7 @@ MQ 异步削峰
       </div>
 
       <p class="jump-row">
-        <button class="jump-link" type="button" data-id="db-isolation-locks">先看含义：事务隔离性与锁 →</button>
+        <button class="jump-link" type="button" data-id="db-isolation-locks">先看含义：事务隔离与并发锁 →</button>
       </p>
 
       <h2 id="case-scene" data-toc="场景还原">场景还原</h2>
@@ -1677,10 +1973,599 @@ where id=1 and version=1;</code></pre>
       </blockquote>
 
       <p class="jump-row">
-        <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离性与锁 →</button>
+        <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离与并发锁 →</button>
         <button class="jump-link" type="button" data-id="seckill-redis-mq">相关：秒杀架构 →</button>
         <button class="jump-link" type="button" data-id="java-spring-annotations/ann-tx">相关：@Transactional 注解 →</button>
       </p>
+    `,
+  },
+  {
+    id: "linux-common-commands",
+    category: "Linux 与运维",
+    order: 10,
+    title: "Linux 常用命令与后端运维",
+    summary: "文件、日志、权限、进程、服务、网络和远程部署速查",
+    related: ["springboot-fullstack-roadmap"],
+    content: `
+      <span class="article-tag">Linux 与运维</span>
+      <h1>Linux 常用命令与后端运维</h1>
+      <p class="lead">学习 Linux 命令不要只背单词。先掌握「路径 + 命令 + 参数 + 管道」的组合方式，再围绕后端最常见的任务练习：找文件、看日志、查端口、管进程、重启服务和远程部署。</p>
+
+      <h2 id="linux-basics" data-toc="命令与路径基础">命令与路径基础</h2>
+      <p>大多数命令都可以拆成：</p>
+      <pre><code>命令 [选项] [目标]
+ls -lah /var/log</code></pre>
+      <ul>
+        <li><code>ls</code>：命令</li>
+        <li><code>-lah</code>：选项，可将多个短选项合并</li>
+        <li><code>/var/log</code>：操作目标</li>
+      </ul>
+      <table>
+        <thead><tr><th>写法</th><th>含义</th><th>例子</th></tr></thead>
+        <tbody>
+          <tr><td><code>/</code></td><td>根目录</td><td><code>/var/log</code></td></tr>
+          <tr><td><code>~</code></td><td>当前用户的家目录</td><td><code>cd ~</code></td></tr>
+          <tr><td><code>.</code></td><td>当前目录</td><td><code>./deploy.sh</code></td></tr>
+          <tr><td><code>..</code></td><td>上一级目录</td><td><code>cd ..</code></td></tr>
+          <tr><td><code>/opt/app</code></td><td>绝对路径，从根目录开始</td><td>位置固定</td></tr>
+          <tr><td><code>logs/app.log</code></td><td>相对路径，从当前目录开始</td><td>依赖当前位置</td></tr>
+        </tbody>
+      </table>
+      <p>遇到陌生命令先看帮助：</p>
+      <pre><code>命令 --help
+man 命令
+
+ls --help
+man systemctl</code></pre>
+
+      <h2 id="linux-navigation" data-toc="目录与文件">目录与文件操作</h2>
+      <table>
+        <thead><tr><th>命令</th><th>作用</th><th>常用示例</th></tr></thead>
+        <tbody>
+          <tr><td><code>pwd</code></td><td>显示当前目录</td><td><code>pwd</code></td></tr>
+          <tr><td><code>ls</code></td><td>列出目录内容</td><td><code>ls -lah</code></td></tr>
+          <tr><td><code>cd</code></td><td>切换目录</td><td><code>cd /opt/app</code></td></tr>
+          <tr><td><code>mkdir</code></td><td>创建目录</td><td><code>mkdir -p app/logs</code></td></tr>
+          <tr><td><code>touch</code></td><td>创建空文件或更新时间</td><td><code>touch app.log</code></td></tr>
+          <tr><td><code>cp</code></td><td>复制文件或目录</td><td><code>cp -r config config.bak</code></td></tr>
+          <tr><td><code>mv</code></td><td>移动或重命名</td><td><code>mv old.jar app.jar</code></td></tr>
+          <tr><td><code>rm</code></td><td>删除文件或目录</td><td><code>rm -i old.log</code></td></tr>
+          <tr><td><code>ln -s</code></td><td>创建软链接</td><td><code>ln -s /opt/app/releases/v2 current</code></td></tr>
+        </tbody>
+      </table>
+      <blockquote>
+        <p><code>rm</code> 默认不经过回收站。使用 <code>rm -rf</code> 前先执行 <code>pwd</code> 和 <code>ls</code> 确认位置；不要对不确定的路径、变量或通配符直接递归删除。</p>
+      </blockquote>
+
+      <h2 id="linux-read-search" data-toc="查看与搜索">查看文件和搜索内容</h2>
+      <pre><code># 小文件：一次输出全部内容
+cat application.yml
+
+# 大文件：分页阅读，按 q 退出，输入 /关键词 搜索
+less app.log
+
+# 查看开头或末尾
+head -n 20 app.log
+tail -n 100 app.log
+
+# 持续追踪新增日志，Ctrl+C 结束
+tail -f app.log
+tail -n 200 -f app.log</code></pre>
+      <p><code>grep</code> 搜内容，<code>find</code> 找文件：</p>
+      <pre><code># 显示行号、忽略大小写、递归搜索
+grep -Rni "exception" logs/
+
+# 只筛选包含 ERROR 的日志行
+grep -n "ERROR" app.log
+
+# 按名称寻找文件
+find /opt/app -type f -name "*.jar"
+
+# 找 7 天内修改过的日志
+find /var/log -type f -name "*.log" -mtime -7</code></pre>
+
+      <h2 id="linux-pipe-redirect" data-toc="管道与重定向">管道与重定向</h2>
+      <p>管道 <code>|</code> 把左边命令的输出交给右边继续处理，是 Linux 最重要的组合能力。</p>
+      <pre><code># 找出 Java 进程
+ps aux | grep java
+
+# 查看最近 200 行日志，再筛选异常
+tail -n 200 app.log | grep "ERROR"
+
+# 统计日志中 ERROR 出现次数
+grep -c "ERROR" app.log</code></pre>
+      <table>
+        <thead><tr><th>符号</th><th>作用</th><th>示例</th></tr></thead>
+        <tbody>
+          <tr><td><code>&gt;</code></td><td>覆盖写入文件</td><td><code>echo hello &gt; test.txt</code></td></tr>
+          <tr><td><code>&gt;&gt;</code></td><td>追加写入文件</td><td><code>echo hello &gt;&gt; test.txt</code></td></tr>
+          <tr><td><code>2&gt;</code></td><td>重定向错误输出</td><td><code>command 2&gt; error.log</code></td></tr>
+          <tr><td><code>2&gt;&amp;1</code></td><td>把错误输出合并到标准输出</td><td><code>command &gt; all.log 2&gt;&amp;1</code></td></tr>
+          <tr><td><code>tee</code></td><td>同时显示并写入文件</td><td><code>command | tee output.log</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="linux-permissions" data-toc="用户与权限">用户与文件权限</h2>
+      <pre><code>ls -l
+-rwxr-xr-- 1 app app 1024 Oct 12 deploy.sh</code></pre>
+      <p>权限按「文件所有者、所属组、其他用户」分成三组；<code>r</code> 是读，<code>w</code> 是写，<code>x</code> 是执行。</p>
+      <pre><code># 给当前所有者增加执行权限
+chmod u+x deploy.sh
+
+# 所有者 rwx，组和其他用户 r-x
+chmod 755 deploy.sh
+
+# 修改所有者和所属组
+sudo chown -R app:app /opt/app
+
+# 查看当前用户和所属组
+whoami
+id</code></pre>
+      <p><code>sudo</code> 表示以更高权限执行当前命令，不是“命令报错就加 sudo”。避免使用 <code>chmod 777</code> 掩盖权限设计问题。</p>
+
+      <h2 id="linux-process" data-toc="进程管理">进程与后台任务</h2>
+      <pre><code># 查看进程
+ps aux
+pgrep -af java
+top
+
+# 正常请求进程退出，优先使用
+kill -15 PID
+
+# 进程无法正常退出时最后再用
+kill -9 PID
+
+# 后台启动 Jar，并把输出写入日志
+nohup java -jar app.jar &gt; app.log 2&gt;&amp;1 &amp;
+
+# 查看当前终端启动的后台任务
+jobs
+fg %1
+bg %1</code></pre>
+      <blockquote>
+        <p><code>kill</code> 的本质是向进程发送信号。默认的 <code>kill PID</code> 等同于 <code>kill -15 PID</code>，允许程序执行清理；<code>-9</code> 会立即强制终止，应作为最后手段。</p>
+      </blockquote>
+
+      <h2 id="linux-systemd" data-toc="服务与日志">systemd 服务与系统日志</h2>
+      <p>正式服务器通常用 systemd 管理应用，不建议长期依赖手动执行 <code>nohup</code>。</p>
+      <pre><code># 查看、启动、停止、重启服务
+sudo systemctl status myapp
+sudo systemctl start myapp
+sudo systemctl stop myapp
+sudo systemctl restart myapp
+
+# 设置开机启动
+sudo systemctl enable myapp
+
+# 持续查看某个服务的日志
+journalctl -u myapp -f
+
+# 查看最近一小时的日志
+journalctl -u myapp --since "1 hour ago"
+
+# 修改 service 文件后重新加载配置
+sudo systemctl daemon-reload</code></pre>
+      <p>排查服务时先看 <code>status</code>，再看 <code>journalctl</code>，通常能找到启动命令、权限、端口冲突或配置错误。</p>
+
+      <h2 id="linux-network" data-toc="网络与端口">网络与端口排查</h2>
+      <pre><code># 查看网卡地址和路由
+ip addr
+ip route
+
+# 查看正在监听的 TCP 端口及进程
+ss -lntp
+
+# 测试网络连通性和域名解析
+ping example.com
+getent hosts example.com
+
+# 调用接口；-I 只看响应头，-v 显示详细过程
+curl http://localhost:8080/actuator/health
+curl -I https://example.com
+curl -v http://localhost:8080/api/users
+
+# 下载文件
+wget https://example.com/app.jar</code></pre>
+      <p>后端服务访问失败时按顺序判断：进程是否存在 → 端口是否监听 → 本机请求是否成功 → 防火墙或安全组是否放行 → 域名和反向代理是否正确。</p>
+
+      <h2 id="linux-resources" data-toc="资源与磁盘">磁盘、内存和系统负载</h2>
+      <pre><code># 文件系统剩余空间
+df -h
+
+# 目录占用空间
+du -sh /var/log
+du -sh * | sort -h
+
+# 内存使用情况
+free -h
+
+# 系统运行时间和平均负载
+uptime
+
+# 实时查看 CPU、内存和进程
+top</code></pre>
+      <p><code>df</code> 看整个分区还剩多少空间，<code>du</code> 看具体目录或文件占了多少空间。服务器磁盘告警时，两者通常要配合使用。</p>
+
+      <h2 id="linux-archive-package" data-toc="压缩与软件安装">压缩、解压和软件安装</h2>
+      <pre><code># tar.gz 打包与解压
+tar -czf backup.tar.gz app/
+tar -xzf backup.tar.gz
+
+# 查看压缩包内容但不解压
+tar -tzf backup.tar.gz
+
+# zip 打包与解压
+zip -r backup.zip app/
+unzip backup.zip</code></pre>
+      <p>常见发行版使用不同的软件包管理器：</p>
+      <pre><code># Ubuntu / Debian
+sudo apt update
+sudo apt install nginx
+
+# Fedora / 新版 CentOS、RHEL 系列
+sudo dnf install nginx
+
+# 较旧的 CentOS
+sudo yum install nginx</code></pre>
+
+      <h2 id="linux-remote" data-toc="SSH 与文件传输">SSH 登录与远程传输</h2>
+      <pre><code># 登录远程服务器
+ssh user@192.168.1.10
+ssh -p 2222 user@192.168.1.10
+
+# 上传文件或目录
+scp app.jar user@192.168.1.10:/opt/app/
+scp -r dist/ user@192.168.1.10:/opt/app/
+
+# 增量同步目录；结尾的 / 会影响目录层级
+rsync -avz --progress dist/ user@192.168.1.10:/opt/app/dist/</code></pre>
+      <p>生产环境优先使用 SSH 密钥登录，不要把密码或私钥写进代码仓库。使用 <code>rsync --delete</code> 前先加 <code>--dry-run</code> 检查将要删除的文件。</p>
+
+      <h2 id="linux-env" data-toc="环境变量">环境变量与 Shell</h2>
+      <pre><code># 查看环境变量
+env
+printenv JAVA_HOME
+echo $PATH
+
+# 只在当前 Shell 及其子进程中生效
+export APP_ENV=prod
+
+# 重新加载当前 Shell 配置
+source ~/.bashrc
+
+# 查看命令历史
+history</code></pre>
+      <p>环境变量是否生效与“在哪个用户、哪个 Shell、哪个服务进程中设置”有关。终端里能看到的变量，不代表 systemd 启动的应用也能自动读到。</p>
+
+      <h2 id="linux-backend-flow" data-toc="后端排查流程">后端部署与故障排查流程</h2>
+      <p>部署 Spring Boot 应用时，可以按这条链路检查：</p>
+      <pre class="flow">登录服务器
+  ↓
+确认目录和磁盘空间
+  ↓
+上传新 Jar / 配置文件
+  ↓
+检查文件所有者和权限
+  ↓
+重启 systemd 服务
+  ↓
+查看服务状态和启动日志
+  ↓
+检查 8080 等端口是否监听
+  ↓
+curl 本机健康检查接口
+  ↓
+再检查 Nginx、域名、防火墙和外部访问</pre>
+      <pre><code>ssh app@server
+cd /opt/myapp
+pwd
+df -h
+ls -lah
+sudo chown app:app app.jar
+sudo systemctl restart myapp
+sudo systemctl status myapp
+journalctl -u myapp -n 100 --no-pager
+ss -lntp | grep 8080
+curl http://localhost:8080/actuator/health</code></pre>
+
+      <h2 id="linux-cheatsheet" data-toc="最小必会清单">最小必会清单</h2>
+      <p>刚开始不用一次背完所有参数，先做到以下命令能独立使用：</p>
+      <pre><code>pwd  ls  cd  mkdir  touch  cp  mv  rm
+cat  less  head  tail  grep  find
+chmod  chown  sudo
+ps  top  kill  systemctl  journalctl
+ip  ss  ping  curl
+df  du  free  tar
+ssh  scp  rsync</code></pre>
+      <blockquote>
+        <p>最有效的练习方式是围绕真实问题使用命令：日志在哪里、哪个进程占端口、服务为什么没启动、磁盘被什么占满。能完成排查，比单纯背参数更重要。</p>
+      </blockquote>
+    `,
+  },
+  {
+    id: "what-is-intellij-idea",
+    category: "其他小问题",
+    order: 10,
+    title: "开发工具：IntelliJ IDEA 是什么",
+    summary: "理解 IDEA、JDK、Maven 和 Spring Boot 各自负责什么",
+    related: [
+      "learning-path-crud-first",
+      "springboot-fullstack-roadmap",
+      "springboot-user-admin-crud",
+    ],
+    content: `
+      <span class="article-tag">其他小问题 · 开发工具</span>
+      <h1>开发工具：IntelliJ IDEA 是什么</h1>
+      <p class="lead"><strong>IDEA</strong> 通常指 JetBrains 开发的 <strong>IntelliJ IDEA</strong>，它是一款集成开发环境（IDE），尤其适合编写 Java 和 Spring Boot 项目。</p>
+
+      <h2 id="idea-definition" data-toc="IDEA 是什么">IDEA 本质上是什么</h2>
+      <p>可以先把 IDEA 理解成一个功能很完整的“代码工作台”。它把编写、运行、调试和管理项目常用的工具集中在同一个界面里。</p>
+      <pre class="flow">普通文本编辑器
+主要负责写文字
+
+IntelliJ IDEA
+写代码 + 检查错误 + 运行项目 + 调试程序 + 管理依赖 + 操作 Git</pre>
+      <p>IDE 是 <strong>Integrated Development Environment</strong> 的缩写，中文叫“集成开发环境”。IntelliJ 是产品系列名称，IDEA 是具体的 Java IDE 产品名称。</p>
+
+      <h2 id="idea-features" data-toc="IDEA 能做什么">IDEA 能帮你做什么</h2>
+      <ul>
+        <li><strong>代码补全</strong>：输入一部分代码时提示类、方法和变量。</li>
+        <li><strong>错误检查</strong>：在运行前标出语法错误、类型错误和部分潜在问题。</li>
+        <li><strong>运行项目</strong>：直接启动普通 Java 程序或 Spring Boot 服务。</li>
+        <li><strong>断点调试</strong>：暂停程序，逐行执行并查看变量值。</li>
+        <li><strong>重构代码</strong>：安全地重命名类、方法和变量，提取方法等。</li>
+        <li><strong>管理 Maven / Gradle</strong>：加载依赖、运行构建任务。</li>
+        <li><strong>操作 Git</strong>：查看修改、提交代码、切换分支和解决冲突。</li>
+        <li><strong>数据库与插件</strong>：连接数据库，安装 Lombok 等开发插件。</li>
+      </ul>
+
+      <h2 id="idea-toolchain" data-toc="和 JDK、Maven 的关系">IDEA、JDK、Maven 和 Spring Boot</h2>
+      <p>它们不是同一种东西：</p>
+      <table>
+        <thead><tr><th>工具</th><th>负责什么</th><th>简单理解</th></tr></thead>
+        <tbody>
+          <tr><td>IntelliJ IDEA</td><td>编辑、运行和调试项目</td><td>开发工作台</td></tr>
+          <tr><td>JDK</td><td>编译和运行 Java 程序</td><td>Java 的基础工具包</td></tr>
+          <tr><td>Maven / Gradle</td><td>下载依赖、编译、测试和打包</td><td>项目构建工具</td></tr>
+          <tr><td>Spring Boot</td><td>帮助开发 Java 后端应用</td><td>开发框架</td></tr>
+        </tbody>
+      </table>
+      <pre class="flow">你在 IDEA 中写 Spring Boot 代码
+        ↓
+Maven 下载项目需要的依赖
+        ↓
+JDK 编译并运行 Java 程序
+        ↓
+Spring Boot 启动后端服务</pre>
+      <blockquote>
+        <p>没有 IDEA 也可以用命令行和其他编辑器开发 Java；但没有 JDK，Java 代码通常无法编译和运行。因此 IDEA 是开发工具，不是 Java 运行环境。</p>
+      </blockquote>
+
+      <h2 id="idea-editions" data-toc="社区版与旗舰版">Community 和 Ultimate 的区别</h2>
+      <ul>
+        <li><strong>Community Edition（社区版）</strong>：免费，适合 Java 基础、普通 Maven 项目和入门学习。</li>
+        <li><strong>Ultimate Edition（旗舰版）</strong>：付费，对 Spring、数据库、Web 开发等提供更完整的内置支持。</li>
+      </ul>
+      <p>社区版仍然可以运行 Spring Boot 项目，只是缺少部分框架识别、导航和高级工具。学习 Java 基础时社区版通常够用；经常开发 Spring Boot 项目时旗舰版会更方便。</p>
+
+      <h2 id="idea-first-use" data-toc="第一次使用">第一次使用先确认什么</h2>
+      <ol>
+        <li>安装与项目要求匹配的 JDK，例如 JDK 17 或 JDK 21。</li>
+        <li>在 IDEA 的 Project SDK 中选择正确的 JDK。</li>
+        <li>使用 Maven 或 Gradle 正确导入项目。</li>
+        <li>找到带 <code>main</code> 方法的类，或 Spring Boot 的启动类。</li>
+        <li>点击运行按钮启动，出错时先阅读控制台日志。</li>
+      </ol>
+      <pre><code>@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}</code></pre>
+      <p>看到类似 <code>Started Application</code> 的日志，一般表示 Spring Boot 已成功启动。之后再根据日志中的端口访问服务，例如 <code>http://localhost:8080</code>。</p>
+
+      <h2 id="idea-shortcuts" data-toc="常用快捷键">Windows 常用快捷键与缩写</h2>
+      <table>
+        <thead><tr><th>操作</th><th>快捷键 / 缩写</th></tr></thead>
+        <tbody>
+          <tr><td>基础代码补全</td><td><code>Ctrl + Space</code></td></tr>
+          <tr><td>显示修复建议、导入类</td><td><code>Alt + Enter</code></td></tr>
+          <tr><td>注释或取消注释当前行</td><td><code>Ctrl + /</code></td></tr>
+          <tr><td>生成 <code>main</code> 方法</td><td>输入 <code>psvm</code> 后确认</td></tr>
+          <tr><td>生成 <code>System.out.println()</code></td><td>输入 <code>sout</code> 后确认</td></tr>
+        </tbody>
+      </table>
+      <p>快捷键可能受 IDEA 键位方案、操作系统和输入法影响。忘记快捷键时可使用 <code>Ctrl + Shift + A</code> 搜索 IDEA 中的操作名称。</p>
+
+      <blockquote>
+        <p><strong>一句话记忆：</strong>IntelliJ IDEA 是用来编写、运行和调试 Java 项目的开发工具；JDK 才是编译和运行 Java 的基础。</p>
+      </blockquote>
+    `,
+  },
+  {
+    id: "learning-path-crud-first",
+    category: "学习路线",
+    order: 10,
+    title: "Java 后端学习路线：先掌握 CRUD",
+    summary: "从 Java、MySQL 到 Spring Boot 项目的阶段式学习顺序",
+    related: [
+      "springboot-fullstack-roadmap",
+      "java-object-create-dto",
+      "java-spring-annotations",
+      "java-object-json-serialize",
+      "linux-common-commands",
+      "what-is-intellij-idea",
+      "springboot-user-admin-crud",
+    ],
+    content: `
+      <span class="article-tag">学习路线</span>
+      <h1>Java 后端学习路线：先掌握 CRUD</h1>
+      <p class="lead">你现在的问题往往不是「不懂高级知识」，反而是<strong>高级知识学得比基础代码能力快了</strong>。</p>
+
+      <h2 id="gap" data-toc="知识结构缺口">知识结构缺口</h2>
+      <p>你已经能讨论 Redis 原子性、MQ 削峰、幂等、事务、高并发；但如果要求：</p>
+      <blockquote>
+        <p>创建一个 User 表，实现新增、查询、修改、删除用户。</p>
+      </blockquote>
+      <p>写不出来，说明结构更像这样：</p>
+      <pre class="flow">高级架构知识
+     ↑
+     |
+基础 CRUD  ← 缺口
+     |
+Java 语法</pre>
+      <p>合格 Java 后端更合理的顺序：</p>
+      <pre class="flow">Java基础
+ ↓
+面向对象
+ ↓
+集合
+ ↓
+MySQL基础
+ ↓
+CRUD
+ ↓
+Spring Boot
+ ↓
+MyBatis
+ ↓
+项目分层
+ ↓
+Redis / MQ / JVM / 并发
+ ↓
+架构设计</pre>
+      <blockquote>
+        <p>现在不要继续钻秒杀、高并发。下一步是补齐基本功，独立写出完整 CRUD。</p>
+      </blockquote>
+
+      <h2 id="stage1" data-toc="阶段1：Java 基本功">第一阶段：Java 后端基本功（约 2~4 周）</h2>
+      <p>目标：独立写出一个完整 CRUD 项目。</p>
+
+      <h3>类和对象（必须熟练）</h3>
+      <pre><code>public class User {
+    private Long id;
+    private String username;
+}
+
+User user = new User();
+user.setUsername("张三");
+user.getUsername();</code></pre>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="java-object-create-dto">相关：对象的创建与 DTO →</button>
+      </p>
+
+      <h3>集合（后端天天用）</h3>
+      <ul>
+        <li><code>List&lt;User&gt;</code>：一组数据；<code>select * from user</code> 常返回 List</li>
+        <li><code>Map&lt;String, Object&gt;</code>：键值结构，接近 JSON 对象</li>
+      </ul>
+      <p>HashMap 底层先不用深挖，知道 key → hash → 数组位置 → value 即可。</p>
+
+      <h3>异常</h3>
+      <pre><code>try {
+} catch (Exception e) {
+}
+throw new RuntimeException();</code></pre>
+      <p>后端大量场景：参数错误、数据库异常、业务异常。</p>
+
+      <h2 id="stage2" data-toc="阶段2：MySQL">第二阶段：MySQL 基础（必须）</h2>
+      <p>不会 SQL 就写不了后端。至少会：建表、查、增、改、删，并达到「看见业务需求，可以设计表」。</p>
+      <pre><code>CREATE TABLE user(
+  id bigint,
+  username varchar(50)
+);
+
+select * from user;
+insert into user(...) values(...);
+update user set username='张三' where id=1;
+delete from user where id=1;</code></pre>
+
+      <h2 id="stage3" data-toc="阶段3：Spring Boot CRUD">第三阶段：Spring Boot CRUD（当前重点）</h2>
+      <p>例如用户管理系统。表字段：id / username / password / age。完整写出 Entity → Mapper → Service → Controller。</p>
+      <pre><code>@Data
+public class User {
+    private Long id;
+    private String username;
+    private Integer age;
+}
+
+@Mapper
+public interface UserMapper {
+    List&lt;User&gt; selectList();
+}
+
+@Service
+public class UserService {
+    public List&lt;User&gt; list() { }
+}
+
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @GetMapping("/list")
+    public List&lt;User&gt; list() { }
+}</code></pre>
+      <p>当你能自己完成：查询列表、新增、修改、删除——后端基础才算入门。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-fullstack-roadmap">实战路线：从 0 到 1 项目 →</button>
+        <button class="jump-link" type="button" data-id="java-spring-annotations">相关：Spring Boot 常用注解 →</button>
+      </p>
+
+      <h2 id="stage4" data-toc="阶段4：理解 Spring">第四阶段：理解 Spring 为什么这样写</h2>
+      <p>不要死记 <code>@Service</code> / <code>@Autowired</code> / <code>@RestController</code>，理解启动过程：</p>
+      <pre class="flow">扫描注解
+ ↓
+创建对象
+ ↓
+放入 IOC 容器
+ ↓
+需要时注入</pre>
+      <p>拦截器、ThreadLocal 等都建立在这个基础上。</p>
+
+      <h2 id="stage5" data-toc="阶段5：真实项目">第五阶段：做一个真实项目</h2>
+      <p>不要只做过于简单的「学生管理系统」。建议 ALMS 简化版——实验室设备管理：</p>
+      <pre class="flow">用户：登录 / 查询 / 修改
+设备：新增 / 查询 / 改状态 / 删除
+预约：预约 / 取消 / 查记录</pre>
+      <p>你会自然遇到：DTO、VO、Entity、Token、权限、Redis、定时任务。</p>
+
+      <h2 id="months" data-toc="按月建议">按月建议</h2>
+      <table>
+        <thead>
+          <tr><th>阶段</th><th>学什么</th><th>目标</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>第 1 个月</td><td>Java 基础 + Spring Boot CRUD + MySQL</td><td>能写后台接口</td></tr>
+          <tr><td>第 2 个月</td><td>Spring MVC、MyBatis、Redis、JWT、异常、校验、日志</td><td>像普通开发</td></tr>
+          <tr><td>第 3 个月</td><td>JVM、线程、锁、MQ、缓存、分布式、性能</td><td>高级开发</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="avoid" data-toc="先别急着学">现在不要急着学</h2>
+      <ul>
+        <li>微服务</li>
+        <li>分布式事务</li>
+        <li>秒杀架构（可当拓展阅读，不当主线）</li>
+        <li>JVM / Netty 源码</li>
+      </ul>
+      <blockquote>
+        <p>现在像「已经知道发动机原理，但还不会开车」。先把车开起来。</p>
+      </blockquote>
+
+      <h2 id="next" data-toc="下一步行动">下一步行动</h2>
+      <p>从一个真实 Spring Boot 项目开始写 CRUD，顺序建议：</p>
+      <ol>
+        <li>创建 Spring Boot 项目</li>
+        <li>配置 Maven</li>
+        <li>连接 MySQL</li>
+        <li>创建 User 表</li>
+        <li>Entity → Mapper → Service → Controller</li>
+        <li>前端 Vue 调接口</li>
+      </ol>
+      <p>每写一步搞清：为什么这样设计、Spring 底层做了什么、面试怎么答、项目注意什么。</p>
+      <blockquote>
+        <p>现在缺的不是继续听概念，而是<strong>把一条完整请求链路亲手写出来</strong>。</p>
+      </blockquote>
     `,
   },
 ];
