@@ -1059,8 +1059,8 @@ Vue / Axios
     id: "springboot-user-admin-crud",
     category: "Spring Boot",
     order: 30,
-    title: "用户管理 CRUD：从项目创建到查询列表",
-    summary: "用 Spring Boot、MyBatis 和 MySQL 跑通第一条后端请求链路",
+    title: "用户管理 CRUD：从查询列表到 POST 新增",
+    summary: "用 Spring Boot、MyBatis 和 MySQL 跑通查询与新增用户链路",
     related: [
       "springboot-fullstack-roadmap",
       "java-spring-annotations",
@@ -1070,8 +1070,8 @@ Vue / Axios
     ],
     content: `
       <span class="article-tag">Spring Boot · 项目实战</span>
-      <h1>用户管理 CRUD：从项目创建到查询列表</h1>
-      <p class="lead">这个项目的第一阶段目标不是一次写完所有功能，而是先跑通 <strong>HTTP 请求 → Controller → Service → Mapper → MySQL → JSON 响应</strong>。目前已经完成查询列表，也就是 CRUD 中的 Read；下一步再补新增、修改和删除。</p>
+      <h1>用户管理 CRUD：从查询列表到 POST 新增</h1>
+      <p class="lead">这个项目的第一阶段目标不是一次写完所有功能，而是先跑通 <strong>HTTP 请求 → Controller → Service → Mapper → MySQL → JSON 响应</strong>。目前已经完成查询列表（Read）和 POST 新增（Create）；下一步再补修改和删除。</p>
 
       <h2 id="user-admin-goal" data-toc="目标与学习方式">项目目标与学习方式</h2>
       <p>用需求带动知识学习：</p>
@@ -1245,7 +1245,6 @@ public class UserService {
       <p>这里使用构造器注入：依赖明确、便于测试，也不需要在字段上使用 <code>@Autowired</code>。</p>
       <h3>Controller：暴露接口</h3>
       <pre><code>@RestController
-@RequestMapping("/users")
 public class UserController {
 
     private final UserService userService;
@@ -1254,12 +1253,12 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping
+    @GetMapping("/user/list")
     public List&lt;User&gt; list() {
         return userService.list();
     }
 }</code></pre>
-      <p>访问 <code>GET /users</code> 后，完整执行过程是：</p>
+      <p>本项目实际访问 <code>GET /user/list</code>。完整执行过程是：</p>
       <pre class="flow">客户端发送请求
   ↓
 内嵌 Tomcat 接收连接
@@ -1280,6 +1279,134 @@ Jackson 序列化为 JSON
   ↓
 返回客户端</pre>
 
+      <h2 id="user-admin-create" data-toc="POST 新增用户">POST 新增用户：完整链路</h2>
+      <p>新增需求是：客户端提交用户名和年龄，服务端把数据保存到 MySQL。请求示例：</p>
+      <pre><code>POST http://localhost:8080/user
+Content-Type: application/json
+
+{
+    "username": "WangWu",
+    "age": 18
+}</code></pre>
+      <pre class="flow">客户端 / Postman / Apifox
+  ↓ POST /user + JSON
+UserController.insert(@RequestBody User user)
+  ↓ JSON 反序列化为 User 对象
+UserService.insert(user)
+  ↓
+UserMapper.insert(user)
+  ↓ MyBatis 绑定参数
+INSERT INTO user(username, age) VALUES (?, ?)
+  ↓
+MySQL 新增一行，返回受影响行数 rows
+  ↓ rows == 1
+客户端收到“新增成功”</pre>
+      <p>和 GET 查询的区别是：GET 把数据库数据取出来返回；POST 把请求数据送进来并执行 <code>INSERT</code> 保存。</p>
+
+      <h3>Mapper：声明 INSERT 和参数</h3>
+      <pre><code>@Mapper
+public interface UserMapper {
+
+    @Select("SELECT id, username, age FROM user")
+    List&lt;User&gt; selectAll();
+
+    @Insert("INSERT INTO user (username, age) VALUES (#{username}, #{age})")
+    int insert(User user);
+}</code></pre>
+      <p><code>@Insert</code> 告诉 MyBatis：调用这个接口方法时执行对应的 INSERT SQL。<code>#{username}</code> 和 <code>#{age}</code> 来自传入的 <code>User</code> 对象属性，近似会变成带参数绑定的：</p>
+      <pre><code>INSERT INTO user (username, age) VALUES (?, ?)</code></pre>
+      <p>这里不是简单地把字符串拼进 SQL；MyBatis 会绑定参数，这也是避免常见 SQL 注入问题的重要原因之一。</p>
+      <p>Mapper 是接口也没关系：MyBatis 会在运行时创建代理对象，按照注解中的 SQL 执行数据库操作，不需要自己手写 JDBC 连接和结果处理模板。</p>
+
+      <h3><code>int insert(User user)</code> 到底是什么意思</h3>
+      <pre class="flow">int          insert       (User user)
+返回值类型    方法名          参数：类型 + 变量名</pre>
+      <ul>
+        <li><code>int</code>：执行后返回整数，通常表示受影响的行数。</li>
+        <li><code>insert</code>：方法名，表示新增操作。</li>
+        <li><code>User user</code>：接收一个 User 对象。</li>
+        <li>接口方法声明以分号结束，不需要方法体。</li>
+      </ul>
+      <p>新增一行时通常得到 <code>rows == 1</code>；这个 <code>1</code> 表示影响了一行，<strong>不是新用户的 ID</strong>。自增 ID 由 MySQL 根据 <code>AUTO_INCREMENT</code> 生成。</p>
+
+      <h3>Service：传递对象并保留业务层</h3>
+      <pre><code>@Service
+public class UserService {
+
+    private final UserMapper userMapper;
+
+    public UserService(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
+
+    public List&lt;User&gt; list() {
+        return userMapper.selectAll();
+    }
+
+    public int insert(User user) {
+        return userMapper.insert(user);
+    }
+}</code></pre>
+      <p>当前新增只调用一行 Mapper，但以后可以在 Service 中加入用户名重复检查、业务规则、事务和日志。Controller 接收请求，Mapper 专注 SQL，职责仍然清晰。</p>
+      <p>要区分方法<strong>定义</strong>和<strong>调用</strong>：</p>
+      <pre><code>// 定义：声明参数类型和变量名
+int insert(User user);
+
+// 调用：只传入已有变量
+userMapper.insert(user);</code></pre>
+      <p>不能把 <code>userMapper.insert(User user)</code> 当作调用写法；调用时不能重复声明参数类型。</p>
+
+      <h3>Controller：接收 JSON 并判断结果</h3>
+      <pre><code>@PostMapping("/user")
+public String insert(@RequestBody User user) {
+    int rows = userService.insert(user);
+    if (rows == 1) {
+        return "新增成功";
+    }
+    return "新增失败";
+}</code></pre>
+      <p><code>@RequestBody</code> 让 Spring MVC 从 HTTP Body 读取 JSON，并通过 Jackson 反序列化成 <code>User</code> 对象。近似可以理解成：</p>
+      <pre><code>User user = new User();
+user.setUsername("WangWu");
+user.setAge(18);</code></pre>
+      <p>如果把 Service 错写成 <code>public User insert()</code>，就会同时出现三个问题：没有接收待新增对象、返回类型与 Mapper 的 <code>int</code> 不匹配、调用时错误地声明了 <code>User user</code>。正确结构是 <code>public int insert(User user)</code>。</p>
+
+      <h2 id="user-admin-post-test" data-toc="测试 POST 接口">如何测试 POST 新增</h2>
+      <p>浏览器地址栏通常发送 GET，不能只把 POST 地址粘进去；新增需要请求方法、请求头和 JSON Body。</p>
+      <h3>Postman / Apifox</h3>
+      <ol>
+        <li>请求方式选择 <code>POST</code>。</li>
+        <li>URL 填 <code>http://localhost:8080/user</code>。</li>
+        <li>Body 选择 raw，格式选择 JSON。</li>
+        <li>填写 <code>{"username":"WangWu","age":18}</code> 并发送。</li>
+        <li>当前练习版正常新增一行会返回 <code>新增成功</code>。</li>
+      </ol>
+      <h3>Windows PowerShell</h3>
+      <pre><code>Invoke-RestMethod -Uri "http://localhost:8080/user" -Method Post -ContentType "application/json" -Body '{"username":"WangWu","age":18}'</code></pre>
+      <p>测试前确认 Spring Boot 应用和 Docker 中的 MySQL 都在运行。接口返回成功后，再执行 SQL 验证数据：</p>
+      <pre><code>USE user_admin;
+
+SELECT * FROM user;
+
+SELECT id, username, age
+FROM user
+WHERE username = 'WangWu';</code></pre>
+      <p>接口返回“新增成功”说明代码判断通过；SQL 查询能确认数据确实落到了数据库中。自增 ID 不一定是 3，要以数据库实际状态为准。</p>
+
+      <h2 id="user-admin-create-pitfalls" data-toc="新增常见错误">POST 新增常见错误</h2>
+      <table>
+        <thead><tr><th>问题</th><th>原因</th><th>正确思路</th></tr></thead>
+        <tbody>
+          <tr><td><code>public User insert()</code></td><td>没有参数，且返回类型不是 Mapper 的 int</td><td><code>public int insert(User user)</code></td></tr>
+          <tr><td><code>insert(User user)</code> 用在调用处</td><td>调用时重复声明参数类型</td><td><code>insert(user)</code></td></tr>
+          <tr><td>忘记 <code>@RequestBody</code></td><td>请求 JSON 无法按预期绑定到 User</td><td><code>@RequestBody User user</code></td></tr>
+          <tr><td>把返回的 1 当成用户 ID</td><td>MyBatis INSERT 返回受影响行数</td><td>新 ID 由数据库自增生成</td></tr>
+          <tr><td>删除原来的 <code>selectAll()</code></td><td>新增功能不应破坏已有查询</td><td>在 Mapper、Service、Controller 中追加方法</td></tr>
+          <tr><td><code>#{username}</code> 拼错</td><td>参数名与 User 属性不一致</td><td>与 <code>username</code>、<code>age</code> 保持一致</td></tr>
+        </tbody>
+      </table>
+      <p>数据库连接失败或 SQL 执行失败时，异常可能直接返回错误响应，不一定会走到“新增失败”。后续应补充参数校验、统一异常处理和统一响应结构。</p>
+
       <h2 id="user-admin-troubleshooting" data-toc="常见错误排查">两个常见启动错误</h2>
       <h3>找不到 UserMapper Bean</h3>
       <pre><code>required a bean of type 'UserMapper' that could not be found</code></pre>
@@ -1297,17 +1424,17 @@ Jackson 序列化为 JSON
       <p>把项目切换到一组已验证版本可以帮助定位问题，但不能简单归因于“某个 Spring Boot 大版本一定和 MyBatis 不兼容”。根因仍应以依赖树和启动日志为准。</p>
 
       <h2 id="user-admin-next" data-toc="下一步：完成 CRUD">下一步：补齐完整 CRUD</h2>
-      <p>CRUD 分别是 Create、Read、Update、Delete。目前只完成了查询列表（Read）：</p>
+      <p>CRUD 分别是 Create、Read、Update、Delete。目前已经完成查询列表（Read）和 POST 新增（Create）：</p>
       <table>
         <thead><tr><th>能力</th><th>HTTP 接口</th><th>SQL</th><th>状态</th></tr></thead>
         <tbody>
           <tr><td>查询列表</td><td><code>GET /users</code></td><td><code>SELECT</code></td><td>已完成</td></tr>
-          <tr><td>新增用户</td><td><code>POST /users</code></td><td><code>INSERT</code></td><td>下一步</td></tr>
+          <tr><td>新增用户</td><td><code>POST /user</code></td><td><code>INSERT</code></td><td>已完成</td></tr>
           <tr><td>修改用户</td><td><code>PUT /users/{id}</code></td><td><code>UPDATE</code></td><td>待完成</td></tr>
           <tr><td>删除用户</td><td><code>DELETE /users/{id}</code></td><td><code>DELETE</code></td><td>待完成</td></tr>
         </tbody>
       </table>
-      <p>新增和修改接口不要直接把数据库 Entity 当作所有请求参数，下一步应建立 <code>UserCreateRequest</code>、<code>UserUpdateRequest</code> 等 DTO，并补充参数校验、统一异常处理和接口测试。</p>
+      <p>下一步是实现修改和删除：建立 <code>UserUpdateRequest</code> 等 DTO，学习 <code>@PutMapping</code>、<code>@PathVariable</code> 和 MyBatis 的 <code>@Update</code> / <code>@Delete</code>，并补充参数校验、统一异常处理和接口测试。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="java-object-create-dto">下一步基础：DTO 与参数映射 →</button>
         <button class="jump-link" type="button" data-id="java-spring-annotations/ann-params">相关：@RequestBody 接收参数 →</button>
@@ -1317,7 +1444,7 @@ Jackson 序列化为 JSON
       <h2 id="user-admin-interview" data-toc="面试表达">面试怎么表达</h2>
       <h3>Spring Boot 请求流程</h3>
       <blockquote>
-        <p>客户端请求先由内嵌 Web 服务器接收，再交给 Spring MVC 的 DispatcherServlet。DispatcherServlet 根据映射找到 Controller 方法，Controller 调用 Service 处理业务，Service 调用 Mapper 访问数据库。查询结果映射为 Java 对象后，由消息转换器序列化成 JSON 返回客户端。</p>
+        <p>客户端请求先由内嵌 Web 服务器接收，再交给 Spring MVC 的 DispatcherServlet。DispatcherServlet 根据映射找到 Controller 方法；POST 请求中的 JSON 会先由消息转换器反序列化成 Java 对象，Controller 再调用 Service，Service 调用 Mapper 访问数据库。查询结果或操作结果最后由消息转换器写回 HTTP 响应。</p>
       </blockquote>
       <h3>三层架构</h3>
       <blockquote>
@@ -1340,6 +1467,7 @@ Jackson 序列化为 JSON
       "db-isolation-locks",
       "case-concurrent-withdraw",
       "interceptor-threadlocal",
+      "springboot-user-admin-crud",
     ],
     content: `
       <span class="article-tag">Spring Boot</span>
