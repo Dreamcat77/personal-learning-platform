@@ -1057,8 +1057,8 @@ Vue / Axios
     id: "springboot-user-admin-crud",
     category: "Spring Boot 开发",
     order: 20,
-    title: "用户管理 CRUD：统一响应与参数校验",
-    summary: "完成五个 CRUD 接口，并用 Result、Bean Validation 和全局异常处理统一响应",
+    title: "用户管理 CRUD：统一响应、校验与分页",
+    summary: "完成 CRUD、统一响应和参数校验，并用 MyBatis 实现分页查询",
     related: [
       "springboot-fullstack-roadmap",
       "java-spring-annotations",
@@ -1068,8 +1068,8 @@ Vue / Axios
     ],
     content: `
       <span class="article-tag">Spring Boot 开发 · 项目实战</span>
-      <h1>用户管理 CRUD：统一响应与参数校验</h1>
-      <p class="lead">这个项目已经从“跑通查询与新增”推进到<strong>完整 CRUD + 统一响应 + 参数校验 + 全局异常处理</strong>。核心链路是：客户端请求 → Controller 接收参数 → 参数校验 → Service 处理业务 → Mapper 操作数据库 → Result 包装响应 → 客户端接收 JSON。</p>
+      <h1>用户管理 CRUD：统一响应、校验与分页</h1>
+      <p class="lead">这个项目已经从“跑通查询与新增”推进到<strong>完整 CRUD + 统一响应 + 参数校验 + 全局异常处理 + 分页查询</strong>。核心链路是：客户端请求 → Controller 接收参数 → 参数校验 → Service 处理业务 → Mapper 操作数据库 → Result 包装响应 → 客户端接收 JSON。</p>
 
       <h2 id="user-admin-goal" data-toc="目标与学习方式">项目目标与学习方式</h2>
       <p>用需求带动知识学习：</p>
@@ -1421,8 +1421,8 @@ WHERE username = 'WangWu';</code></pre>
       </ol>
       <p>把项目切换到一组已验证版本可以帮助定位问题，但不能简单归因于“某个 Spring Boot 大版本一定和 MyBatis 不兼容”。根因仍应以依赖树和启动日志为准。</p>
 
-      <h2 id="user-admin-progress" data-toc="当前进度">当前进度：五个接口已完成</h2>
-      <p>CRUD 分别是 Create、Read、Update、Delete。当前五个接口已经统一为 <code>Result&lt;T&gt;</code> 响应，并通过 Postman 验证：</p>
+      <h2 id="user-admin-progress" data-toc="当前进度">当前进度：CRUD 与分页已完成</h2>
+      <p>CRUD 分别是 Create、Read、Update、Delete。当前五个基础接口和一个分页接口已经统一为 <code>Result&lt;T&gt;</code> 响应，并通过 Postman 验证：</p>
       <table>
         <thead><tr><th>能力</th><th>HTTP 接口</th><th>响应类型</th><th>状态</th></tr></thead>
         <tbody>
@@ -1431,6 +1431,7 @@ WHERE username = 'WangWu';</code></pre>
           <tr><td>新增用户</td><td><code>POST /user</code></td><td><code>Result&lt;Void&gt;</code></td><td>已完成</td></tr>
           <tr><td>修改用户</td><td><code>PUT /user</code></td><td><code>Result&lt;Void&gt;</code></td><td>已完成</td></tr>
           <tr><td>删除用户</td><td><code>DELETE /user/delete</code></td><td><code>Result&lt;Void&gt;</code></td><td>已完成</td></tr>
+          <tr><td>分页查询</td><td><code>GET /user/list/page</code></td><td><code>Result&lt;PageResult&lt;User&gt;&gt;</code></td><td>已完成</td></tr>
         </tbody>
       </table>
       <p>成功和失败响应现在都包含 <code>code</code>、<code>message</code>、<code>data</code>。要注意：JSON 中的业务码和 HTTP 状态码是两个概念；只有使用 <code>ResponseEntity</code> 等方式设置响应状态，HTTP 状态码才会随之改变。</p>
@@ -1602,6 +1603,126 @@ public Result&lt;Void&gt; delete(@RequestBody User user) {
           <tr><td>把 Result 当成异常类</td><td>混淆响应模型与异常处理职责</td><td>Result 定义格式，异常处理器负责捕获异常</td></tr>
         </tbody>
       </table>
+
+      <h2 id="user-admin-pagination" data-toc="分页查询链路">分页查询：为什么需要、怎样分层</h2>
+      <p>数据量变大后，每次查询并返回全部用户会增加数据库扫描、网络传输和前端渲染的负担。分页接口每次只取一部分记录，同时返回符合条件的总数：</p>
+      <ul>
+        <li><code>total</code>：符合查询条件的总记录数。</li>
+        <li><code>records</code>：当前页实际查询出的用户列表。</li>
+      </ul>
+      <pre class="flow">GET /user/list/page?pageNum=1&amp;pageSize=10
+  ↓
+Controller：接收并校验分页参数
+  ↓
+Service：计算 offset、组织两次查询、组装 PageResult
+  ↓
+Mapper：执行 COUNT 和分页 SELECT
+  ↓
+MySQL</pre>
+      <p>职责仍然保持一致：Controller 不写 SQL，Service 组织分页流程，Mapper 专注数据库查询。</p>
+
+      <h2 id="user-admin-page-params" data-toc="分页参数">@RequestParam 与分页参数</h2>
+      <pre><code>@RequestParam(defaultValue = "1") Integer pageNum,
+@RequestParam(defaultValue = "10") Integer pageSize</code></pre>
+      <p><code>@RequestParam</code> 获取 URL 问号后的查询参数。例如 <code>?pageNum=2&amp;pageSize=5</code> 会分别绑定到两个 Java 参数。<code>defaultValue</code> 的类型是字符串，所以默认值必须加引号；Spring 随后会把它转换成 <code>Integer</code>。</p>
+      <table>
+        <thead><tr><th>注解</th><th>参数来源</th><th>示例</th></tr></thead>
+        <tbody>
+          <tr><td><code>@PathVariable</code></td><td>URL 路径</td><td><code>/user/list/1</code></td></tr>
+          <tr><td><code>@RequestParam</code></td><td><code>?</code> 后的查询参数</td><td><code>/user/list/page?pageNum=1</code></td></tr>
+        </tbody>
+      </table>
+      <p>分页参数需要限制范围。当前规则是页码至少为 1，每页 1～100 条，防止无效页码或一次请求过多数据：</p>
+      <pre><code>if (pageNum &lt; 1 || pageSize &lt; 1 || pageSize &gt; 100) {
+    return Result.error("页码必须大于0，每页条数必须在1到100之间");
+}</code></pre>
+
+      <h2 id="user-admin-page-mapper" data-toc="分页 SQL">Mapper：总数与当前页</h2>
+      <p>一个完整分页结果通常需要两次查询。第一次统计总记录数：</p>
+      <pre><code>@Select("SELECT COUNT(*) FROM user")
+Long count();</code></pre>
+      <p>第二次查询当前页数据：</p>
+      <pre><code>@Select("""
+        SELECT id, username, age
+        FROM user
+        ORDER BY id ASC
+        LIMIT #{offset}, #{pageSize}
+        """)
+List&lt;User&gt; selectPage(
+        @Param("offset") Integer offset,
+        @Param("pageSize") Integer pageSize);</code></pre>
+      <ul>
+        <li><code>offset</code>：先跳过多少条记录。</li>
+        <li><code>pageSize</code>：本次最多取多少条记录。</li>
+        <li><code>@Param</code>：为 MyBatis 参数命名，让 SQL 中的 <code>#{offset}</code>、<code>#{pageSize}</code> 能找到对应值。</li>
+        <li><code>ORDER BY id</code>：提供稳定顺序，避免翻页时结果顺序不确定。</li>
+      </ul>
+      <p>页码从 1 开始，数据库偏移量从 0 开始，因此：</p>
+      <pre><code>int offset = (pageNum - 1) * pageSize;</code></pre>
+      <table>
+        <thead><tr><th>页码</th><th>每页条数</th><th>offset</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>10</td><td>0</td><td>跳过 0 条</td></tr>
+          <tr><td>2</td><td>10</td><td>10</td><td>跳过前 10 条</td></tr>
+          <tr><td>3</td><td>10</td><td>20</td><td>跳过前 20 条</td></tr>
+          <tr><td>2</td><td>5</td><td>5</td><td>跳过前 5 条</td></tr>
+        </tbody>
+      </table>
+      <p><code>COUNT(*)</code> 使用 <code>Long</code> 接收时，<code>PageResult.total</code> 和构造方法参数也要保持 <code>Long</code>。以后增加用户名等筛选条件时，COUNT 和分页 SELECT 必须使用相同条件，否则总数会与列表不匹配。</p>
+
+      <h2 id="user-admin-page-service" data-toc="分页结果封装">Service 与嵌套响应</h2>
+      <pre><code>public PageResult&lt;User&gt; page(Integer pageNum, Integer pageSize) {
+    int offset = (pageNum - 1) * pageSize;
+    Long total = userMapper.count();
+    List&lt;User&gt; records = userMapper.selectPage(offset, pageSize);
+    return new PageResult&lt;&gt;(pageNum, pageSize, total, records);
+}</code></pre>
+      <p><code>PageResult&lt;User&gt;</code> 专门描述分页数据，包含 <code>pageNum</code>、<code>pageSize</code>、<code>total</code> 和 <code>records</code>；<code>Result&lt;PageResult&lt;User&gt;&gt;</code> 再在外层统一包装业务码与提示：</p>
+      <pre class="flow">Result
+├── code
+├── message
+└── data: PageResult&lt;User&gt;
+    ├── pageNum
+    ├── pageSize
+    ├── total
+    └── records: List&lt;User&gt;</pre>
+      <p>这两个泛型层次职责不同，不能用 <code>Result&lt;Void&gt;</code> 代替 <code>Result&lt;PageResult&lt;User&gt;&gt;</code>。前面定义的泛型 <code>Result.error(String message)</code> 可以根据 Controller 的返回类型自动推断正确类型。</p>
+
+      <h2 id="user-admin-page-controller" data-toc="分页接口">Controller 与测试</h2>
+      <pre><code>@GetMapping("/user/list/page")
+public Result&lt;PageResult&lt;User&gt;&gt; page(
+        @RequestParam(defaultValue = "1") Integer pageNum,
+        @RequestParam(defaultValue = "10") Integer pageSize) {
+
+    if (pageNum &lt; 1 || pageSize &lt; 1 || pageSize &gt; 100) {
+        return Result.error("页码必须大于0，每页条数必须在1到100之间");
+    }
+
+    PageResult&lt;User&gt; pageResult = userService.page(pageNum, pageSize);
+    return Result.success("分页查询成功", pageResult);
+}</code></pre>
+      <p>分页是 GET 请求，不需要 Body。至少验证以下场景：</p>
+      <ul>
+        <li><code>/user/list/page?pageNum=1&amp;pageSize=10</code>：正常第一页。</li>
+        <li><code>/user/list/page?pageNum=1&amp;pageSize=2</code>：<code>records</code> 最多两条。</li>
+        <li><code>/user/list/page</code>：使用第 1 页、每页 10 条的默认值。</li>
+        <li><code>?pageNum=0&amp;pageSize=10</code>：返回页码错误。</li>
+        <li><code>?pageNum=1&amp;pageSize=101</code>：返回每页条数超限错误。</li>
+      </ul>
+
+      <h2 id="user-admin-page-review" data-toc="分页复盘">分页常见错误与优化</h2>
+      <table>
+        <thead><tr><th>问题</th><th>原因</th><th>修正</th></tr></thead>
+        <tbody>
+          <tr><td><code>defaultValue = 1</code></td><td>defaultValue 要求字符串</td><td>写成 <code>defaultValue = "1"</code></td></tr>
+          <tr><td>Long 不能转为 Integer</td><td>COUNT 返回类型与接收类型不一致</td><td>统一使用 <code>Long total</code></td></tr>
+          <tr><td>Result 泛型不匹配</td><td>错误方法固定返回 <code>Result&lt;Void&gt;</code></td><td>使用泛型 <code>Result.error(...)</code></td></tr>
+          <tr><td>调用不存在的 <code>error1</code></td><td>定义与调用名称不一致</td><td>统一调用 <code>Result.error(...)</code></td></tr>
+          <tr><td>校验条件和提示不一致</td><td>边界规则没有统一</td><td>条件与“1～100”提示保持一致</td></tr>
+          <tr><td>翻页数据顺序变化</td><td>SQL 没有明确排序</td><td>分页 SELECT 增加稳定的 <code>ORDER BY</code></td></tr>
+        </tbody>
+      </table>
+      <p><code>LIMIT offset, pageSize</code> 简单直观，适合当前学习项目；offset 很大时，数据库仍需跳过大量记录，性能可能下降。数据规模继续增长后，可以学习基于唯一、有序字段的游标分页。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="java-object-create-dto">相关基础：DTO 与参数映射 →</button>
         <button class="jump-link" type="button" data-id="java-spring-annotations/ann-params">相关：@RequestBody 接收参数 →</button>
