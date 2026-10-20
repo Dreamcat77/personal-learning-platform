@@ -1057,8 +1057,8 @@ Vue / Axios
     id: "springboot-user-admin-crud",
     category: "Spring Boot 开发",
     order: 20,
-    title: "用户管理 CRUD：从查询列表到 POST 新增",
-    summary: "用 Spring Boot、MyBatis 和 MySQL 跑通查询与新增用户链路",
+    title: "用户管理 CRUD：统一响应与参数校验",
+    summary: "完成五个 CRUD 接口，并用 Result、Bean Validation 和全局异常处理统一响应",
     related: [
       "springboot-fullstack-roadmap",
       "java-spring-annotations",
@@ -1068,8 +1068,8 @@ Vue / Axios
     ],
     content: `
       <span class="article-tag">Spring Boot 开发 · 项目实战</span>
-      <h1>用户管理 CRUD：从查询列表到 POST 新增</h1>
-      <p class="lead">这个项目的第一阶段目标不是一次写完所有功能，而是先跑通 <strong>HTTP 请求 → Controller → Service → Mapper → MySQL → JSON 响应</strong>。目前已经完成查询列表（Read）和 POST 新增（Create）；下一步再补修改和删除。</p>
+      <h1>用户管理 CRUD：统一响应与参数校验</h1>
+      <p class="lead">这个项目已经从“跑通查询与新增”推进到<strong>完整 CRUD + 统一响应 + 参数校验 + 全局异常处理</strong>。核心链路是：客户端请求 → Controller 接收参数 → 参数校验 → Service 处理业务 → Mapper 操作数据库 → Result 包装响应 → 客户端接收 JSON。</p>
 
       <h2 id="user-admin-goal" data-toc="目标与学习方式">项目目标与学习方式</h2>
       <p>用需求带动知识学习：</p>
@@ -1354,7 +1354,7 @@ int insert(User user);
 userMapper.insert(user);</code></pre>
       <p>不能把 <code>userMapper.insert(User user)</code> 当作调用写法；调用时不能重复声明参数类型。</p>
 
-      <h3>Controller：接收 JSON 并判断结果</h3>
+      <h3>第一阶段 Controller：接收 JSON 并判断结果</h3>
       <pre><code>@PostMapping("/user")
 public String insert(@RequestBody User user) {
     int rows = userService.insert(user);
@@ -1363,7 +1363,7 @@ public String insert(@RequestBody User user) {
     }
     return "新增失败";
 }</code></pre>
-      <p><code>@RequestBody</code> 让 Spring MVC 从 HTTP Body 读取 JSON，并通过 Jackson 反序列化成 <code>User</code> 对象。近似可以理解成：</p>
+      <p>这是项目第一阶段直接返回字符串的写法；后续已改为返回统一的 <code>Result&lt;T&gt;</code>。<code>@RequestBody</code> 让 Spring MVC 从 HTTP Body 读取 JSON，并通过 Jackson 反序列化成 <code>User</code> 对象。近似可以理解成：</p>
       <pre><code>User user = new User();
 user.setUsername("WangWu");
 user.setAge(18);</code></pre>
@@ -1377,7 +1377,7 @@ user.setAge(18);</code></pre>
         <li>URL 填 <code>http://localhost:8080/user</code>。</li>
         <li>Body 选择 raw，格式选择 JSON。</li>
         <li>填写 <code>{"username":"WangWu","age":18}</code> 并发送。</li>
-        <li>当前练习版正常新增一行会返回 <code>新增成功</code>。</li>
+        <li>第一阶段正常新增一行会返回 <code>新增成功</code>；统一响应阶段则返回包含 <code>code</code>、<code>message</code>、<code>data</code> 的 JSON。</li>
       </ol>
       <h3>Windows PowerShell</h3>
       <pre><code>Invoke-RestMethod -Uri "http://localhost:8080/user" -Method Post -ContentType "application/json" -Body '{"username":"WangWu","age":18}'</code></pre>
@@ -1403,7 +1403,7 @@ WHERE username = 'WangWu';</code></pre>
           <tr><td><code>#{username}</code> 拼错</td><td>参数名与 User 属性不一致</td><td>与 <code>username</code>、<code>age</code> 保持一致</td></tr>
         </tbody>
       </table>
-      <p>数据库连接失败或 SQL 执行失败时，异常可能直接返回错误响应，不一定会走到“新增失败”。后续应补充参数校验、统一异常处理和统一响应结构。</p>
+      <p>数据库连接失败或 SQL 执行失败时，异常可能直接返回错误响应，不一定会走到“新增失败”。本项目后续已经加入参数校验、统一异常处理和统一响应结构；系统异常仍应记录日志，并避免把堆栈直接暴露给客户端。</p>
 
       <h2 id="user-admin-troubleshooting" data-toc="常见错误排查">两个常见启动错误</h2>
       <h3>找不到 UserMapper Bean</h3>
@@ -1421,20 +1421,189 @@ WHERE username = 'WangWu';</code></pre>
       </ol>
       <p>把项目切换到一组已验证版本可以帮助定位问题，但不能简单归因于“某个 Spring Boot 大版本一定和 MyBatis 不兼容”。根因仍应以依赖树和启动日志为准。</p>
 
-      <h2 id="user-admin-next" data-toc="下一步：完成 CRUD">下一步：补齐完整 CRUD</h2>
-      <p>CRUD 分别是 Create、Read、Update、Delete。目前已经完成查询列表（Read）和 POST 新增（Create）：</p>
+      <h2 id="user-admin-progress" data-toc="当前进度">当前进度：五个接口已完成</h2>
+      <p>CRUD 分别是 Create、Read、Update、Delete。当前五个接口已经统一为 <code>Result&lt;T&gt;</code> 响应，并通过 Postman 验证：</p>
       <table>
-        <thead><tr><th>能力</th><th>HTTP 接口</th><th>SQL</th><th>状态</th></tr></thead>
+        <thead><tr><th>能力</th><th>HTTP 接口</th><th>响应类型</th><th>状态</th></tr></thead>
         <tbody>
-          <tr><td>查询列表</td><td><code>GET /users</code></td><td><code>SELECT</code></td><td>已完成</td></tr>
-          <tr><td>新增用户</td><td><code>POST /user</code></td><td><code>INSERT</code></td><td>已完成</td></tr>
-          <tr><td>修改用户</td><td><code>PUT /users/{id}</code></td><td><code>UPDATE</code></td><td>待完成</td></tr>
-          <tr><td>删除用户</td><td><code>DELETE /users/{id}</code></td><td><code>DELETE</code></td><td>待完成</td></tr>
+          <tr><td>查询列表</td><td><code>GET /user/list</code></td><td><code>Result&lt;List&lt;User&gt;&gt;</code></td><td>已完成</td></tr>
+          <tr><td>按 ID 查询</td><td><code>GET /user/list/{id}</code></td><td><code>Result&lt;User&gt;</code></td><td>已完成</td></tr>
+          <tr><td>新增用户</td><td><code>POST /user</code></td><td><code>Result&lt;Void&gt;</code></td><td>已完成</td></tr>
+          <tr><td>修改用户</td><td><code>PUT /user</code></td><td><code>Result&lt;Void&gt;</code></td><td>已完成</td></tr>
+          <tr><td>删除用户</td><td><code>DELETE /user/delete</code></td><td><code>Result&lt;Void&gt;</code></td><td>已完成</td></tr>
         </tbody>
       </table>
-      <p>下一步是实现修改和删除：建立 <code>UserUpdateRequest</code> 等 DTO，学习 <code>@PutMapping</code>、<code>@PathVariable</code> 和 MyBatis 的 <code>@Update</code> / <code>@Delete</code>，并补充参数校验、统一异常处理和接口测试。</p>
+      <p>成功和失败响应现在都包含 <code>code</code>、<code>message</code>、<code>data</code>。要注意：JSON 中的业务码和 HTTP 状态码是两个概念；只有使用 <code>ResponseEntity</code> 等方式设置响应状态，HTTP 状态码才会随之改变。</p>
+
+      <h2 id="user-admin-result" data-toc="统一响应 Result">统一响应 Result&lt;T&gt;</h2>
+      <p>三个核心类的职责要分清：</p>
+      <ul>
+        <li><strong>Controller</strong>：接收请求、获取参数、调用 Service，并返回结果。</li>
+        <li><strong>Result</strong>：包装成功或失败响应，不是专门存储异常的类。</li>
+        <li><strong>GlobalExceptionHandler</strong>：捕获指定异常，并将其转换为统一响应。</li>
+      </ul>
+      <pre><code>@Data
+public class Result&lt;T&gt; {
+
+    private Integer code;
+    private String message;
+    private T data;
+
+    public static &lt;T&gt; Result&lt;T&gt; success(T data) {
+        Result&lt;T&gt; result = new Result&lt;&gt;();
+        result.setCode(200);
+        result.setMessage("操作成功");
+        result.setData(data);
+        return result;
+    }
+
+    public static &lt;T&gt; Result&lt;T&gt; success(String message, T data) {
+        Result&lt;T&gt; result = new Result&lt;&gt;();
+        result.setCode(200);
+        result.setMessage(message);
+        result.setData(data);
+        return result;
+    }
+
+    public static &lt;T&gt; Result&lt;T&gt; error(String message) {
+        Result&lt;T&gt; result = new Result&lt;&gt;();
+        result.setCode(400);
+        result.setMessage(message);
+        result.setData(null);
+        return result;
+    }
+}</code></pre>
+      <p><code>T</code> 决定 <code>data</code> 中承载的数据类型：单个用户用 <code>Result&lt;User&gt;</code>，列表用 <code>Result&lt;List&lt;User&gt;&gt;</code>，无需业务数据时用 <code>Result&lt;Void&gt;</code>。两个 <code>success</code> 方法参数列表不同，属于方法重载。</p>
+
+      <h3>为什么 error 也要声明泛型</h3>
+      <p>如果错误方法固定返回 <code>Result&lt;Void&gt;</code>，需要 <code>Result&lt;User&gt;</code> 的 Controller 就会出现“无法转换”的编译错误。将它写成泛型静态方法：</p>
+      <pre><code>public static &lt;T&gt; Result&lt;T&gt; error(String message)</code></pre>
+      <p>Java 就能根据调用位置推断类型，因此下面三种返回类型都可以直接调用 <code>Result.error(...)</code>：</p>
+      <pre><code>Result&lt;User&gt;
+Result&lt;List&lt;User&gt;&gt;
+Result&lt;Void&gt;</code></pre>
+      <p>错误提示应该放在 <code>message</code> 中，不要设计成 <code>error(T data)</code> 后又把提示字符串塞进 <code>data</code>，否则字段语义会混乱。</p>
+
+      <h2 id="user-admin-validation" data-toc="参数校验">参数校验：注解与触发方式</h2>
+      <table>
+        <thead><tr><th>注解</th><th>适用类型</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td><code>@NotBlank</code></td><td>字符串</td><td>不能为 null、空字符串或全空白字符串</td></tr>
+          <tr><td><code>@NotNull</code></td><td><code>Integer</code>、<code>Long</code> 等对象类型</td><td>不能为 null</td></tr>
+          <tr><td><code>@Min(0)</code></td><td>数值</td><td>不能小于指定下限</td></tr>
+          <tr><td><code>@Max(150)</code></td><td>数值</td><td>不能大于指定上限</td></tr>
+        </tbody>
+      </table>
+      <pre><code>@NotBlank(message = "名字不能为空")
+private String username;
+
+@NotNull(message = "年龄不能为空")
+@Min(value = 0, message = "年龄不能小于0")
+@Max(value = 150, message = "年龄不能大于150")
+private Integer age;</code></pre>
+      <p><code>@NotBlank</code> 只适合字符串；数值字段通常使用包装类型和 <code>@NotNull</code>，再配合 <code>@Min</code>、<code>@Max</code> 限制范围。包装类型 <code>Integer</code> 可以表达“请求未提供值”，基本类型 <code>int</code> 则不能为 null。</p>
+      <p>字段注解不会自动执行。项目需要 Bean Validation 实现依赖（例如 <code>spring-boot-starter-validation</code>），Controller 参数还要使用 <code>@Valid</code> 触发校验：</p>
+      <pre><code>@PostMapping("/user")
+public Result&lt;Void&gt; add(@Valid @RequestBody User user) {
+    int rows = userService.add(user);
+    return rows &gt; 0
+            ? Result.success("新增成功", null)
+            : Result.error("新增失败");
+}</code></pre>
+      <p><code>@RequestBody</code> 负责把 JSON 转成对象，<code>@Valid</code> 负责执行对象字段上的校验规则，两者职责不同。新增和修改对 ID 的要求通常不同；项目继续演进时，优先建立 <code>UserCreateRequest</code>、<code>UserUpdateRequest</code> 等 DTO，而不是让一个实体承担所有场景的校验规则。</p>
+
+      <h2 id="user-admin-exception" data-toc="全局异常处理">全局异常处理器</h2>
+      <p>校验失败时，Spring MVC 会抛出 <code>MethodArgumentNotValidException</code>。全局异常处理器提取字段错误，再返回统一 JSON：</p>
+      <pre><code>@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity&lt;Result&lt;Void&gt;&gt; handleValidationException(
+            MethodArgumentNotValidException e) {
+
+        String message = "参数校验失败";
+        if (e.getBindingResult().getFieldError() != null) {
+            message = e.getBindingResult()
+                    .getFieldError()
+                    .getDefaultMessage();
+        }
+
+        return ResponseEntity.badRequest()
+                .body(Result.error(message));
+    }
+}</code></pre>
+      <pre class="flow">请求 JSON
+  ↓
+@RequestBody 转成 User
+  ↓
+@Valid 执行字段校验
+  ↓ 失败
+MethodArgumentNotValidException
+  ↓
+GlobalExceptionHandler
+  ↓
+HTTP 400 + Result.error(message)</pre>
+      <p><code>getDefaultMessage()</code> 返回的是字符串。如果处理方法声明返回 <code>ResponseEntity&lt;Result&lt;Void&gt;&gt;</code>，就不能直接返回这个字符串；必须先用 <code>Result.error(message)</code> 包装，再放入 <code>ResponseEntity</code>。</p>
+      <p>当前实现只取第一个字段错误，适合入门阶段。以后可以收集所有字段错误，并继续区分参数校验异常、业务异常和未知系统异常。</p>
+
+      <h2 id="user-admin-unified-crud" data-toc="统一后的 CRUD">统一后的 CRUD 写法</h2>
+      <pre><code>@GetMapping("/user/list")
+public Result&lt;List&lt;User&gt;&gt; list() {
+    return Result.success("查询成功", userService.list());
+}
+
+@GetMapping("/user/list/{id}")
+public Result&lt;User&gt; getById(@PathVariable Long id) {
+    User user = userService.list(id);
+    return user == null
+            ? Result.error("用户不存在")
+            : Result.success("查询成功", user);
+}
+
+@PostMapping("/user")
+public Result&lt;Void&gt; add(@Valid @RequestBody User user) {
+    return userService.add(user) &gt; 0
+            ? Result.success("新增成功", null)
+            : Result.error("新增失败");
+}
+
+@PutMapping("/user")
+public Result&lt;Void&gt; update(@Valid @RequestBody User user) {
+    return userService.update(user) &gt; 0
+            ? Result.success("更新成功", null)
+            : Result.error("更新失败");
+}
+
+@DeleteMapping("/user/delete")
+public Result&lt;Void&gt; delete(@RequestBody User user) {
+    return userService.delete(user) &gt; 0
+            ? Result.success("删除成功", null)
+            : Result.error("用户不存在或删除失败");
+}</code></pre>
+      <p><code>rows &gt; 0</code> 表示至少一行受到影响，不代表新记录的 ID。用户是否存在、用户名能否重复等业务规则主要放在 Service；Controller 根据 Service 的结果组织 HTTP 响应，不要把所有业务判断都堆在 Controller 中。</p>
+
+      <h2 id="user-admin-stage-review" data-toc="阶段复盘">阶段复盘与测试清单</h2>
+      <ul>
+        <li>查询列表返回 <code>Result&lt;List&lt;User&gt;&gt;</code>。</li>
+        <li>按 ID 查询时，存在返回用户，不存在返回明确提示。</li>
+        <li>新增、修改和删除都返回统一结构。</li>
+        <li>空用户名、缺失年龄和年龄越界能触发参数校验。</li>
+        <li>参数校验失败返回 HTTP 400 和统一 JSON，不暴露异常堆栈。</li>
+        <li>成功与失败响应都包含 <code>code</code>、<code>message</code>、<code>data</code>。</li>
+      </ul>
+      <table>
+        <thead><tr><th>踩坑</th><th>原因</th><th>修正</th></tr></thead>
+        <tbody>
+          <tr><td><code>suceess(...)</code></td><td>方法名拼写错误</td><td>统一为 <code>success(...)</code> 并同步调用处</td></tr>
+          <tr><td>使用未声明的 <code>user</code></td><td>查询和赋值步骤缺失</td><td>先调用 Service 得到对象，再判断 null</td></tr>
+          <tr><td><code>Result&lt;Void&gt;</code> 无法转为 <code>Result&lt;User&gt;</code></td><td>错误工厂方法返回类型写死</td><td>把 <code>error</code> 声明为泛型静态方法</td></tr>
+          <tr><td>异常处理方法直接返回 String</td><td>与声明的响应类型不一致</td><td>先包装 Result，再返回 ResponseEntity</td></tr>
+          <tr><td>校验注解不生效</td><td>缺少依赖或没有使用 <code>@Valid</code></td><td>检查 Validation 依赖和触发位置</td></tr>
+          <tr><td>把 Result 当成异常类</td><td>混淆响应模型与异常处理职责</td><td>Result 定义格式，异常处理器负责捕获异常</td></tr>
+        </tbody>
+      </table>
       <p class="jump-row">
-        <button class="jump-link" type="button" data-id="java-object-create-dto">下一步基础：DTO 与参数映射 →</button>
+        <button class="jump-link" type="button" data-id="java-object-create-dto">相关基础：DTO 与参数映射 →</button>
         <button class="jump-link" type="button" data-id="java-spring-annotations/ann-params">相关：@RequestBody 接收参数 →</button>
         <button class="jump-link" type="button" data-id="java-spring-annotations/ann-valid">相关：参数校验 →</button>
       </p>
