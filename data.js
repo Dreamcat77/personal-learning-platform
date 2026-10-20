@@ -1,24 +1,22 @@
 window.KNOWLEDGE_CATEGORIES = [
-  "学习路线",
-  "Java 基础",
-  "Spring Boot",
-  "Linux 与运维",
+  "学习路线与工具",
+  "Java 与数据交互",
+  "Spring Boot 开发",
   "认证与安全",
-  "数据库与事务",
-  "高并发与架构",
-  "其他小问题",
+  "数据库与高并发",
+  "Linux 与部署",
 ];
 
 window.KNOWLEDGE = [
   {
     id: "interceptor-threadlocal",
-    category: "Spring Boot",
-    order: 20,
+    category: "Spring Boot 开发",
+    order: 30,
     title: "请求拦截与用户上下文",
     summary: "用 Interceptor 和 ThreadLocal 管理当前登录用户",
     related: ["sso-single-sign-on"],
     content: `
-      <span class="article-tag">Spring Boot</span>
+      <span class="article-tag">Spring Boot 开发</span>
       <h1>请求拦截与用户上下文</h1>
       <p class="lead">这两个经常一起用，但不是一回事。<strong>拦截器</strong>负责「在请求进 Controller 前后做统一处理」；<strong>ThreadLocal</strong>负责「在当前线程里临时保存数据」。</p>
 
@@ -327,13 +325,13 @@ SSO：
   },
   {
     id: "java-object-json-serialize",
-    category: "Java 基础",
-    order: 10,
+    category: "Java 与数据交互",
+    order: 20,
     title: "Java 对象、JSON 与序列化",
     summary: "理解对象与 JSON 的双向转换及请求链路",
     related: ["java-object-create-dto"],
     content: `
-      <span class="article-tag">Java 基础</span>
+      <span class="article-tag">Java 与数据交互</span>
       <h1>Java 对象、JSON 与序列化</h1>
       <p class="lead">这几个概念要连着理解，尤其在 Java 后端里，和 JSON 关系非常大。</p>
 
@@ -522,13 +520,13 @@ JSON → Java对象
   },
   {
     id: "java-object-create-dto",
-    category: "Java 基础",
-    order: 20,
+    category: "Java 与数据交互",
+    order: 10,
     title: "对象创建、DTO 与参数映射",
     summary: "从 new 对象到按 JSON 建模和 Controller 接参",
     related: ["java-object-json-serialize"],
     content: `
-      <span class="article-tag">Java 基础</span>
+      <span class="article-tag">Java 与数据交互</span>
       <h1>对象创建、DTO 与参数映射</h1>
       <p class="lead">对象的创建，核心就是这句：</p>
       <pre><code>User user = new User();</code></pre>
@@ -804,7 +802,7 @@ Service    → 真正的业务逻辑</pre>
   },
   {
     id: "springboot-fullstack-roadmap",
-    category: "学习路线",
+    category: "学习路线与工具",
     order: 20,
     title: "Spring Boot 全栈项目：从 0 到 1",
     summary: "用 Vue、Spring Boot 和 MySQL 串起完整请求链路",
@@ -817,7 +815,7 @@ Service    → 真正的业务逻辑</pre>
       "springboot-user-admin-crud",
     ],
     content: `
-      <span class="article-tag">学习路线</span>
+      <span class="article-tag">学习路线与工具</span>
       <h1>Spring Boot 全栈项目：从 0 到 1</h1>
       <p class="lead">现在最适合的不是继续零散背知识点，而是<strong>亲手从 0 做一个完整 Spring Boot 前后端项目</strong>，过程中遇到什么再把底层知识补进去。</p>
 
@@ -1057,8 +1055,8 @@ Vue / Axios
   },
   {
     id: "springboot-user-admin-crud",
-    category: "Spring Boot",
-    order: 30,
+    category: "Spring Boot 开发",
+    order: 20,
     title: "用户管理 CRUD：从查询列表到 POST 新增",
     summary: "用 Spring Boot、MyBatis 和 MySQL 跑通查询与新增用户链路",
     related: [
@@ -1069,7 +1067,7 @@ Vue / Axios
       "what-is-intellij-idea",
     ],
     content: `
-      <span class="article-tag">Spring Boot · 项目实战</span>
+      <span class="article-tag">Spring Boot 开发 · 项目实战</span>
       <h1>用户管理 CRUD：从查询列表到 POST 新增</h1>
       <p class="lead">这个项目的第一阶段目标不是一次写完所有功能，而是先跑通 <strong>HTTP 请求 → Controller → Service → Mapper → MySQL → JSON 响应</strong>。目前已经完成查询列表（Read）和 POST 新增（Create）；下一步再补修改和删除。</p>
 
@@ -1458,7 +1456,7 @@ WHERE username = 'WangWu';</code></pre>
   },
   {
     id: "java-spring-annotations",
-    category: "Spring Boot",
+    category: "Spring Boot 开发",
     order: 10,
     title: "Spring Boot 常用注解",
     summary: "按用途掌握组件、接口、校验、事务等常用注解",
@@ -1470,7 +1468,7 @@ WHERE username = 'WangWu';</code></pre>
       "springboot-user-admin-crud",
     ],
     content: `
-      <span class="article-tag">Spring Boot</span>
+      <span class="article-tag">Spring Boot 开发</span>
       <h1>Spring Boot 常用注解</h1>
       <p class="lead">在 Java 后端里，<code>@xxx</code> 叫<strong>注解 Annotation</strong>。你可以先把它理解成：</p>
       <blockquote>
@@ -1670,8 +1668,8 @@ public class UserService {
   },
   {
     id: "seckill-redis-mq",
-    category: "高并发与架构",
-    order: 10,
+    category: "数据库与高并发",
+    order: 30,
     title: "秒杀系统：Redis、MQ 与一致性",
     summary: "从鉴权削峰到原子扣库存、异步落库和最终一致性",
     related: [
@@ -1681,7 +1679,7 @@ public class UserService {
       "case-concurrent-withdraw",
     ],
     content: `
-      <span class="article-tag">高并发与架构</span>
+      <span class="article-tag">数据库与高并发</span>
       <h1>秒杀系统：Redis、MQ 与一致性</h1>
       <p class="lead">这是 Java 后端非常经典的架构：<strong>高并发秒杀 = 网关鉴权 + Redis 原子扣库存 + MQ 异步削峰 + MySQL 最终落库</strong>。整体思路对，但有几个底层概念必须分清。</p>
 
@@ -1961,7 +1959,7 @@ public void transfer() {
   },
   {
     id: "db-isolation-locks",
-    category: "数据库与事务",
+    category: "数据库与高并发",
     order: 10,
     title: "事务隔离与并发锁",
     summary: "理解事务边界，以及悲观锁、乐观锁和分布式锁",
@@ -1971,7 +1969,7 @@ public void transfer() {
       "java-spring-annotations",
     ],
     content: `
-      <span class="article-tag">数据库与事务</span>
+      <span class="article-tag">数据库与高并发</span>
       <h1>事务隔离与并发锁</h1>
       <p class="lead"><code>@Transactional</code> 能管好<strong>一个事务内部</strong>的成败，但不能单独挡住<strong>多个事务同时改同一行数据</strong>时的竞争。这里补的是并发场景背后的含义：隔离性，以及三种常见锁思路。</p>
 
@@ -2031,7 +2029,7 @@ MQ 异步削峰
   },
   {
     id: "case-concurrent-withdraw",
-    category: "数据库与事务",
+    category: "数据库与高并发",
     order: 20,
     title: "并发扣款：事务为什么不够",
     summary: "用两线程扣余额场景理解事务与并发控制",
@@ -2041,7 +2039,7 @@ MQ 异步削峰
       "java-spring-annotations",
     ],
     content: `
-      <span class="article-tag">数据库与事务 · 场景解析</span>
+      <span class="article-tag">数据库与高并发 · 场景解析</span>
       <h1>并发扣款：事务为什么不够</h1>
       <p class="lead">对应问题：余额 100，两线程同时查到 100 各扣 80——都会成功吗？只有 <code>@Transactional</code> 够不够？</p>
 
@@ -2109,13 +2107,13 @@ where id=1 and version=1;</code></pre>
   },
   {
     id: "linux-common-commands",
-    category: "Linux 与运维",
+    category: "Linux 与部署",
     order: 10,
     title: "Linux 常用命令与后端运维",
     summary: "文件、日志、权限、进程、服务、网络和远程部署速查",
     related: ["springboot-fullstack-roadmap"],
     content: `
-      <span class="article-tag">Linux 与运维</span>
+      <span class="article-tag">Linux 与部署</span>
       <h1>Linux 常用命令与后端运维</h1>
       <p class="lead">学习 Linux 命令不要只背单词。先掌握「路径 + 命令 + 参数 + 管道」的组合方式，再围绕后端最常见的任务练习：找文件、看日志、查端口、管进程、重启服务和远程部署。</p>
 
@@ -2412,8 +2410,8 @@ ssh  scp  rsync</code></pre>
   },
   {
     id: "what-is-intellij-idea",
-    category: "其他小问题",
-    order: 10,
+    category: "学习路线与工具",
+    order: 30,
     title: "开发工具：IntelliJ IDEA 是什么",
     summary: "理解 IDEA、JDK、Maven 和 Spring Boot 各自负责什么",
     related: [
@@ -2422,7 +2420,7 @@ ssh  scp  rsync</code></pre>
       "springboot-user-admin-crud",
     ],
     content: `
-      <span class="article-tag">其他小问题 · 开发工具</span>
+      <span class="article-tag">学习路线与工具 · 开发工具</span>
       <h1>开发工具：IntelliJ IDEA 是什么</h1>
       <p class="lead"><strong>IDEA</strong> 通常指 JetBrains 开发的 <strong>IntelliJ IDEA</strong>，它是一款集成开发环境（IDE），尤其适合编写 Java 和 Spring Boot 项目。</p>
 
@@ -2512,7 +2510,7 @@ public class Application {
   },
   {
     id: "learning-path-crud-first",
-    category: "学习路线",
+    category: "学习路线与工具",
     order: 10,
     title: "Java 后端学习路线：先掌握 CRUD",
     summary: "从 Java、MySQL 到 Spring Boot 项目的阶段式学习顺序",
@@ -2526,7 +2524,7 @@ public class Application {
       "springboot-user-admin-crud",
     ],
     content: `
-      <span class="article-tag">学习路线</span>
+      <span class="article-tag">学习路线与工具</span>
       <h1>Java 后端学习路线：先掌握 CRUD</h1>
       <p class="lead">你现在的问题往往不是「不懂高级知识」，反而是<strong>高级知识学得比基础代码能力快了</strong>。</p>
 
