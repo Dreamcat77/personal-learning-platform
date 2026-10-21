@@ -4,6 +4,7 @@ window.KNOWLEDGE_CATEGORIES = [
   "Spring Boot 开发",
   "认证与安全",
   "数据库与高并发",
+  "Java 后端面试",
   "Linux 与部署",
 ];
 
@@ -2348,6 +2349,366 @@ where id=1 and version=1;</code></pre>
         <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离与并发锁 →</button>
         <button class="jump-link" type="button" data-id="seckill-redis-mq">相关：秒杀架构 →</button>
         <button class="jump-link" type="button" data-id="java-spring-annotations/ann-tx">相关：@Transactional 注解 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "interview-answer-framework",
+    category: "Java 后端面试",
+    order: 10,
+    title: "Java 后端面试：回答框架与项目表达",
+    summary: "用结论、原理、项目和边界组织回答，而不是只背定义",
+    related: [
+      "learning-path-crud-first",
+      "springboot-user-admin-crud",
+      "springboot-result-validation",
+      "springboot-mybatis-pagination",
+      "springboot-dynamic-sql-search",
+    ],
+    content: `
+      <span class="article-tag">Java 后端面试 · 方法与项目</span>
+      <h1>Java 后端面试：回答框架与项目表达</h1>
+      <p class="lead">面试不是背出最长答案，而是让面试官听清：你知道它是什么、为什么这样做、在项目里怎么用，以及它有什么边界。</p>
+
+      <h2 id="interview-four-step" data-toc="四步回答法">技术题的四步回答法</h2>
+      <pre class="flow">1. 先说结论：一句话回答问题
+  ↓
+2. 解释原理：关键机制与执行过程
+  ↓
+3. 联系项目：自己在哪个场景用过
+  ↓
+4. 补充边界：缺点、风险、替代方案</pre>
+      <p>例如回答“为什么要分页”：先说分页减少单次查询和传输量；再解释 COUNT、LIMIT、offset；接着讲用户管理接口；最后补充大 offset 性能和游标分页。回答到这个程度，比只背“分页提高性能”更可信。</p>
+
+      <h2 id="interview-project-intro" data-toc="项目介绍">怎样介绍用户管理练习项目</h2>
+      <p><strong>回答思路：</strong>业务目标 → 技术栈 → 自己完成的链路 → 关键改进 → 当前边界。</p>
+      <blockquote>
+        <p>我做了一个 Spring Boot 用户管理练习项目，使用 Java 21、Spring Boot、MyBatis 和 MySQL，实现了用户 CRUD、统一响应、参数校验、全局异常处理和条件分页。请求由 Controller 接收，Service 组织业务，Mapper 执行 SQL。分页阶段我先实现 COUNT 与 LIMIT，之后用 MyBatis 动态 SQL 增加可选用户名模糊查询，并确保总数和列表使用相同筛选条件。这个项目目前主要用于掌握完整后端链路，还没有加入缓存、权限和自动化测试体系。</p>
+      </blockquote>
+      <p><strong>关键点：</strong>不要把课程或模板说成大型生产系统；明确自己做了什么、理解了什么、还缺什么。</p>
+
+      <h2 id="interview-project-difficulty" data-toc="项目难点">怎样回答“遇到过什么问题”</h2>
+      <p>选择一个能体现排查过程的问题，用 STAR 的简化结构：</p>
+      <ul>
+        <li><strong>场景</strong>：条件分页返回的 total 与 records 不一致。</li>
+        <li><strong>原因</strong>：列表 SQL 加了 username 条件，但 count 仍统计整表。</li>
+        <li><strong>行动</strong>：逐层检查 Controller 参数、Service 传递和两条 Mapper SQL。</li>
+        <li><strong>结果</strong>：统一筛选条件，并补充有条件、无条件、无结果的回归用例。</li>
+      </ul>
+      <p>重点不是“我遇到报错”，而是如何缩小范围、验证假设、修正并防止复发。</p>
+
+      <h2 id="interview-follow-up" data-toc="面对追问">不会或只懂一部分时怎么答</h2>
+      <blockquote>
+        <p>这部分我目前在项目里使用过的是……，我理解它的核心机制是……。更深入的……我还没有实际验证，不想把猜测当成结论；如果继续排查，我会先从官方文档、运行日志和最小实验确认。</p>
+      </blockquote>
+      <p>可以承认边界，但不要只说“不知道”。先讲确定的部分，再说明不确定点和验证路径。不要编造项目规模、性能数字或生产经验。</p>
+
+      <h2 id="interview-review-method" data-toc="复习方法">如何使用这套面试题</h2>
+      <ol>
+        <li>先遮住参考回答，用 30～60 秒口述。</li>
+        <li>检查是否包含结论、原理、项目例子和边界。</li>
+        <li>遇到答不出的追问，回到对应知识文章，而不是继续背句子。</li>
+        <li>把自己的项目代码和真实错误替换进答案。</li>
+        <li>每周随机抽题复述，直到能用自己的话表达。</li>
+      </ol>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-user-admin-crud">项目：搭建与查询链路 →</button>
+        <button class="jump-link" type="button" data-id="springboot-dynamic-sql-search">项目：动态条件分页 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "interview-java-core",
+    category: "Java 后端面试",
+    order: 20,
+    title: "Java 核心常见面试题",
+    summary: "对象、集合、异常、线程和 ThreadLocal 的回答思路",
+    related: [
+      "java-object-json-serialize",
+      "java-object-create-dto",
+      "interceptor-threadlocal",
+      "interview-answer-framework",
+    ],
+    content: `
+      <span class="article-tag">Java 后端面试 · Java 核心</span>
+      <h1>Java 核心常见面试题</h1>
+      <p class="lead">先掌握能和后端代码联系起来的核心题。回答时不要只报术语，要说清比较规则、数据结构或线程可见性解决的具体问题。</p>
+
+      <h2 id="interview-equals" data-toc="== 与 equals">==、equals 和 hashCode 有什么关系？</h2>
+      <p><strong>回答思路：</strong>先区分引用与内容，再说明哈希容器为什么同时需要 equals 和 hashCode。</p>
+      <blockquote>
+        <p>基本类型使用 == 比较值；引用类型的 == 比较是否指向同一对象。equals 默认也是比较引用，但 String 等类重写后会比较内容。若两个对象 equals 为 true，它们的 hashCode 必须相同，否则 HashMap、HashSet 可能把相等对象放到不同桶中；hashCode 相同则不代表 equals 一定为 true，因为可能发生哈希冲突。</p>
+      </blockquote>
+      <p><strong>常见追问：</strong>自定义 DTO 作为 HashMap key 时，为什么要同时重写 equals 和 hashCode？</p>
+
+      <h2 id="interview-string" data-toc="String 不可变">String 为什么不可变？</h2>
+      <blockquote>
+        <p>String 创建后内容不能改变，修改操作会产生新对象。不可变性使字符串常量池、哈希值缓存、线程共享和安全场景更可靠。例如 URL、类名或配置键作为 Map key 时，不会在放入后因内容变化导致查找异常。频繁拼接字符串时应使用 StringBuilder，避免产生大量中间对象。</p>
+      </blockquote>
+      <p><strong>回答边界：</strong>“引用变量重新指向新字符串”不等于原 String 对象被修改。</p>
+
+      <h2 id="interview-list" data-toc="ArrayList 与 LinkedList">ArrayList 和 LinkedList 怎么选？</h2>
+      <blockquote>
+        <p>ArrayList 底层是动态数组，按下标访问快，尾部追加通常高效，但中间插入删除需要移动元素。LinkedList 是双向链表，已知节点位置时插入删除方便，但按下标查找需要遍历，节点也有额外内存开销。实际后端业务中遍历和随机访问更常见，因此通常优先 ArrayList，不能简单说“增删多就用 LinkedList”。</p>
+      </blockquote>
+      <p><strong>常见追问：</strong>ArrayList 扩容、线程安全集合、CopyOnWriteArrayList 的适用场景。</p>
+
+      <h2 id="interview-hashmap" data-toc="HashMap 原理">HashMap 的 put 和 get 大致怎样工作？</h2>
+      <blockquote>
+        <p>HashMap 根据 key 的 hash 计算桶位置。put 时如果桶为空就插入；发生冲突时在链表或树结构中通过 hash 和 equals 查找相同 key，存在则覆盖，不存在则追加。get 也先定位桶，再比较 key。Java 8 在冲突较多且容量满足条件时会把链表树化，降低极端查找成本。HashMap 默认不是线程安全的。</p>
+      </blockquote>
+      <p><strong>回答边界：</strong>平均时间接近 O(1)，但依赖合理 hash 分布；不要死背树化数字而解释不清机制。</p>
+
+      <h2 id="interview-exception" data-toc="异常体系">受检异常和运行时异常有什么区别？</h2>
+      <blockquote>
+        <p>受检异常在编译阶段要求捕获或声明抛出，适合调用方有机会恢复的外部失败；RuntimeException 属于非受检异常，常表示参数、状态或编程错误。异常不应全部 catch 后吞掉：要么处理并记录上下文，要么继续抛出。Spring 事务默认主要对 RuntimeException 和 Error 回滚。</p>
+      </blockquote>
+      <p><strong>项目联系：</strong>参数校验异常由全局异常处理器转换为统一响应；系统异常要记录日志，不能把堆栈直接返回前端。</p>
+
+      <h2 id="interview-thread" data-toc="线程可见性与 ThreadLocal">synchronized、volatile 和 ThreadLocal 分别解决什么？</h2>
+      <blockquote>
+        <p>synchronized 通过互斥和内存语义保护临界区；volatile 保证变量的可见性和一定的有序性，但不能让复合操作自动变成原子操作；ThreadLocal 为每个线程保存独立变量副本，不是锁。Web 项目可用 ThreadLocal 保存当前用户，但线程池会复用线程，请求结束必须 remove，异步线程也不会自动继承普通 ThreadLocal。</p>
+      </blockquote>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="interceptor-threadlocal">深入：请求拦截与用户上下文 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "interview-spring-boot",
+    category: "Java 后端面试",
+    order: 30,
+    title: "Spring 与 Spring Boot 常见面试题",
+    summary: "IOC、自动配置、请求链路、事务和拦截机制",
+    related: [
+      "java-spring-annotations",
+      "springboot-user-admin-crud",
+      "springboot-result-validation",
+      "interceptor-threadlocal",
+      "db-isolation-locks",
+    ],
+    content: `
+      <span class="article-tag">Java 后端面试 · Spring Boot</span>
+      <h1>Spring 与 Spring Boot 常见面试题</h1>
+      <p class="lead">Spring 面试题要把“注解怎么写”提升为“容器、代理和请求链路为什么这样工作”。</p>
+
+      <h2 id="interview-ioc" data-toc="IOC 与 DI">什么是 IOC 和依赖注入？</h2>
+      <blockquote>
+        <p>IOC 是把对象创建、依赖组装和生命周期管理交给 Spring 容器，而不是业务代码到处 new。DI 是容器把对象所需依赖注入进去的实现方式。这样可以降低类之间的直接耦合，更容易替换实现和编写测试。项目中 Controller 通过构造器接收 Service，Service 再接收 Mapper，就是依赖注入。</p>
+      </blockquote>
+      <p><strong>常见追问：</strong>为什么推荐构造器注入？依赖明确、可保持字段不可变，也方便单元测试。</p>
+
+      <h2 id="interview-auto-config" data-toc="自动配置">Spring Boot 自动配置做了什么？</h2>
+      <blockquote>
+        <p>Spring Boot 根据 classpath 中的依赖、配置属性和当前已有 Bean，按条件装配常用组件。Starter 负责聚合依赖，自动配置类负责在条件满足时创建 Bean，application.yml 提供参数。它减少样板配置，但不是“零配置魔法”；出现问题时仍要检查依赖、条件报告和配置绑定。</p>
+      </blockquote>
+
+      <h2 id="interview-request-flow" data-toc="请求执行链">一个请求怎样到达 Controller？</h2>
+      <blockquote>
+        <p>请求先由内嵌 Tomcat 接收，再进入 Spring MVC 的 DispatcherServlet。它根据 HandlerMapping 找到 Controller 方法，通过参数解析器处理 PathVariable、RequestParam、RequestBody 等参数，必要时由消息转换器把 JSON 反序列化为对象。Controller 调用 Service 和 Mapper，返回值再由消息转换器序列化为 JSON。</p>
+      </blockquote>
+      <p><strong>项目联系：</strong>统一响应 Result 最终仍由 Jackson 转成 JSON；@Valid 在参数绑定后执行校验。</p>
+
+      <h2 id="interview-transactional" data-toc="事务失效场景">@Transactional 为什么可能不生效？</h2>
+      <blockquote>
+        <p>Spring 通常通过代理开启事务。常见失效或不回滚原因包括：同类内部自调用绕过代理、方法不是可代理的公开方法、异常被 catch 后没有继续抛出、抛出的异常不在默认回滚范围、操作的不是同一个事务资源。MySQL 本地事务也不能自动回滚 Redis 或 MQ。</p>
+      </blockquote>
+      <p><strong>回答思路：</strong>先说代理和事务边界，再列自己真正理解的失效场景，不要只背清单。</p>
+
+      <h2 id="interview-filter-interceptor-aop" data-toc="Filter、Interceptor、AOP">Filter、Interceptor 和 AOP 有什么区别？</h2>
+      <blockquote>
+        <p>Filter 属于 Servlet 规范，位置更靠外，可处理进入 Web 应用的请求与响应；Interceptor 属于 Spring MVC，围绕 Controller 调用，能拿到处理器信息，适合登录校验和请求上下文；AOP 围绕 Spring Bean 方法织入逻辑，适合日志、事务和统一监控。选择取决于要拦截的层级，不是谁更高级。</p>
+      </blockquote>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="java-spring-annotations">复习：Spring Boot 常用注解 →</button>
+        <button class="jump-link" type="button" data-id="interceptor-threadlocal">复习：Interceptor 与 ThreadLocal →</button>
+      </p>
+    `,
+  },
+  {
+    id: "interview-mysql-transaction",
+    category: "Java 后端面试",
+    order: 40,
+    title: "MySQL、索引与事务常见面试题",
+    summary: "索引、隔离级别、MVCC、锁和 SQL 排查思路",
+    related: [
+      "db-isolation-locks",
+      "case-concurrent-withdraw",
+      "springboot-mybatis-pagination",
+      "springboot-dynamic-sql-search",
+      "api-idempotency-request-id",
+    ],
+    content: `
+      <span class="article-tag">Java 后端面试 · MySQL</span>
+      <h1>MySQL、索引与事务常见面试题</h1>
+      <p class="lead">数据库题不要只背名词。回答时要说明查询怎样定位数据、并发事务怎样互相影响，以及你会如何验证 SQL 是否真的变快。</p>
+
+      <h2 id="interview-index" data-toc="索引与 B+Tree">为什么索引能加快查询？</h2>
+      <blockquote>
+        <p>索引是额外维护的数据结构，用空间和写入成本换取查询速度。InnoDB 常用 B+Tree：树高较低，非叶子节点保存导航信息，叶子节点有序，既适合等值查找，也适合范围扫描。主键索引叶子节点保存整行数据，二级索引叶子节点保存索引列和主键值，查询其他列时可能需要回表。</p>
+      </blockquote>
+      <p><strong>常见追问：</strong>联合索引的最左前缀、覆盖索引、为什么不为每列都建索引。</p>
+
+      <h2 id="interview-index-failure" data-toc="索引可能失效">哪些写法可能让索引难以利用？</h2>
+      <blockquote>
+        <p>常见情况包括：没有满足联合索引的最左前缀、对索引列做函数或隐式类型转换、LIKE 以通配符开头、范围条件后续列利用受限，以及数据区分度太低导致优化器认为全表扫描更划算。是否使用索引不能只靠猜，应通过 EXPLAIN、实际数据分布和执行时间验证。</p>
+      </blockquote>
+      <p><strong>项目联系：</strong><code>LIKE '%Zhang%'</code> 通常难以利用普通前缀索引；小数据学习项目没问题，数据增长后要重新评估搜索方案。</p>
+
+      <h2 id="interview-isolation" data-toc="事务隔离与 MVCC">事务隔离级别和 MVCC 怎么理解？</h2>
+      <blockquote>
+        <p>隔离级别用于平衡并发性能与读取一致性。读未提交可能脏读；读已提交每次查询通常读取新的已提交版本；可重复读让同一事务中的一致性读取看到稳定快照；串行化隔离最强但并发成本高。InnoDB 通过 undo log、事务版本和 Read View 等机制实现 MVCC，使普通一致性读在很多情况下无需阻塞写操作。</p>
+      </blockquote>
+      <p><strong>回答边界：</strong>MVCC 主要解决快照读；加锁读和写操作仍涉及锁。不要把“可重复读”简单说成所有场景绝不会出现幻象。</p>
+
+      <h2 id="interview-locks" data-toc="悲观锁与乐观锁">悲观锁和乐观锁怎样选择？</h2>
+      <blockquote>
+        <p>悲观锁认为冲突概率高，先锁住数据再操作，例如 SELECT ... FOR UPDATE，逻辑直观但会阻塞并占用资源。乐观锁认为冲突较少，更新时带 version 或旧值条件，影响行数为 0 就说明发生冲突，可重试或返回失败。分布式锁用于跨进程协调，但仍要处理过期、误释放、续期和业务兜底。</p>
+      </blockquote>
+      <p><strong>项目联系：</strong>并发扣款不能只靠 @Transactional；还需要条件更新、行锁或其他并发控制保证余额不会被重复扣减。</p>
+
+      <h2 id="interview-sql-tuning" data-toc="SQL 排查">一条查询很慢，你怎样排查？</h2>
+      <pre class="flow">确认请求和慢 SQL
+  ↓
+查看执行频率、参数与数据量
+  ↓
+EXPLAIN 检查访问类型、索引和扫描行数
+  ↓
+检查筛选、排序、回表和返回列
+  ↓
+修改后用相同数据与条件重新测量</pre>
+      <p>不要一上来就“加索引”。分页 SQL 还要关注大 offset：数据库可能扫描并丢弃大量前置记录；可根据业务改用基于唯一有序字段的游标分页。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="db-isolation-locks">深入：事务隔离与并发锁 →</button>
+        <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景：并发扣款 →</button>
+        <button class="jump-link" type="button" data-id="springboot-dynamic-sql-search">项目：动态条件分页 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "interview-redis-mq",
+    category: "Java 后端面试",
+    order: 50,
+    title: "Redis、MQ 与高并发常见面试题",
+    summary: "缓存问题、分布式锁、削峰、幂等和最终一致性",
+    related: [
+      "seckill-redis-mq",
+      "api-idempotency-request-id",
+      "db-isolation-locks",
+      "case-concurrent-withdraw",
+    ],
+    content: `
+      <span class="article-tag">Java 后端面试 · Redis/MQ</span>
+      <h1>Redis、MQ 与高并发常见面试题</h1>
+      <p class="lead">高并发题的关键是分清每个组件解决哪一种压力：缓存减少读库，原子操作控制竞争，MQ 缓冲峰值，幂等与补偿处理重复和跨系统失败。</p>
+
+      <h2 id="interview-redis-use" data-toc="为什么使用 Redis">为什么 Redis 快，后端为什么使用它？</h2>
+      <blockquote>
+        <p>Redis 主要在内存中操作，数据结构针对常见访问模式优化，事件处理模型避免了大量线程切换开销。后端常用它做缓存、计数器、排行榜、会话、限流和短期协调。但 Redis 不是因为快就能替代 MySQL：内存成本、持久化、数据一致性和复杂查询能力都不同。</p>
+      </blockquote>
+      <p><strong>常见追问：</strong>String、Hash、List、Set、ZSet 分别适合什么数据；持久化和主从故障时会发生什么。</p>
+
+      <h2 id="interview-cache-problems" data-toc="缓存三大问题">缓存穿透、击穿和雪崩有什么区别？</h2>
+      <table>
+        <thead><tr><th>问题</th><th>含义</th><th>常见思路</th></tr></thead>
+        <tbody>
+          <tr><td>穿透</td><td>持续查询数据库也不存在的数据</td><td>参数校验、缓存空值、布隆过滤器</td></tr>
+          <tr><td>击穿</td><td>单个热点 key 失效，大量请求同时回源</td><td>互斥重建、逻辑过期、热点预热</td></tr>
+          <tr><td>雪崩</td><td>大量 key 同时失效或 Redis 整体不可用</td><td>过期时间打散、限流降级、高可用</td></tr>
+        </tbody>
+      </table>
+      <p>回答时要先描述流量形态，再给方案；三者不是同一个问题的三个名字。</p>
+
+      <h2 id="interview-distributed-lock" data-toc="分布式锁">Redis 分布式锁要注意什么？</h2>
+      <blockquote>
+        <p>基础做法是 SET key value NX PX timeout：NX 保证只在不存在时设置，超时避免持锁进程崩溃后永久死锁，value 使用请求唯一标识，释放时通过 Lua 原子地校验 value 再删除。还要考虑业务执行超过锁时间、续期、主从切换和锁粒度。分布式锁不是数据库约束的替代品，重要数据仍需条件更新或唯一约束兜底。</p>
+      </blockquote>
+
+      <h2 id="interview-mq-use" data-toc="为什么使用 MQ">MQ 为什么能削峰和解耦？</h2>
+      <blockquote>
+        <p>生产者把任务写入队列后可以快速返回，消费者按下游承载能力异步处理，因此瞬时流量被平摊到后续时间。生产者只依赖消息契约，不直接同步调用多个下游，也降低了耦合。但 MQ 没有让数据库本身变快，还会引入消息丢失、重复、顺序、积压和一致性问题。</p>
+      </blockquote>
+      <p><strong>项目联系：</strong>秒杀中 Redis 原子预扣解决库存竞争，MQ 解决瞬时请求直冲数据库，两者职责不同。</p>
+
+      <h2 id="interview-mq-idempotency" data-toc="重复消费与幂等">MQ 重复投递怎样避免重复业务？</h2>
+      <blockquote>
+        <p>消费者应以业务唯一标识实现幂等，例如订单号或 requestId，并用数据库唯一约束做最终兜底。重复消息到达时识别为已成功处理，返回已有结果或直接确认。@Transactional 只能保证一次数据库事务内部一致，不能阻止第二次消息开启新事务再次执行。</p>
+      </blockquote>
+
+      <h2 id="interview-consistency" data-toc="缓存与数据库一致性">Redis 与 MySQL 不一致怎么办？</h2>
+      <blockquote>
+        <p>先明确业务能否接受短暂不一致。常见缓存更新策略是先更新数据库，再删除缓存；删除失败需要重试或通过消息补偿。秒杀预扣库存属于跨系统流程，MySQL 本地事务不能自动回滚 Redis，需要可靠消息、幂等重试、补偿和对账保证最终一致。不存在一个适合所有业务的“绝对一致缓存模板”。</p>
+      </blockquote>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="seckill-redis-mq">深入：秒杀系统架构 →</button>
+        <button class="jump-link" type="button" data-id="api-idempotency-request-id">深入：接口幂等性 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "interview-http-linux",
+    category: "Java 后端面试",
+    order: 60,
+    title: "HTTP、认证与 Linux 排查常见面试题",
+    summary: "状态码、请求语义、Token、HTTPS 和线上故障定位",
+    related: [
+      "sso-single-sign-on",
+      "interceptor-threadlocal",
+      "linux-common-commands",
+      "springboot-result-validation",
+    ],
+    content: `
+      <span class="article-tag">Java 后端面试 · Web/运维</span>
+      <h1>HTTP、认证与 Linux 排查常见面试题</h1>
+      <p class="lead">后端接口不只是在 Controller 中写注解。要理解 HTTP 语义、认证信息怎样传递，以及服务出问题时如何从网络、进程、端口和日志逐层定位。</p>
+
+      <h2 id="interview-http-status" data-toc="HTTP 状态码">HTTP 状态码和业务码有什么区别？</h2>
+      <blockquote>
+        <p>HTTP 状态码描述协议层结果，例如 200 成功、400 请求参数有误、401 未认证、403 已认证但无权限、404 资源不存在、500 服务端异常。业务码放在 JSON 中，描述项目自定义结果。直接返回 code=400 的 Result 不代表 HTTP 状态自动变成 400；需要 ResponseEntity 或异常处理机制设置实际 HTTP 状态。</p>
+      </blockquote>
+      <p><strong>项目联系：</strong>参数校验异常由全局处理器返回 HTTP 400，同时响应体仍保持统一 Result 结构。</p>
+
+      <h2 id="interview-http-methods" data-toc="HTTP 方法">GET、POST、PUT、PATCH、DELETE 怎样选择？</h2>
+      <blockquote>
+        <p>GET 用于读取资源，参数常放在路径或查询字符串中；POST 常用于创建或执行非幂等操作；PUT 通常表达对指定资源的完整更新并具有幂等语义；PATCH 表达部分更新；DELETE 删除资源。方法语义是接口契约，不应只看“能不能传参数”。敏感数据也不能仅因为放在 POST Body 就认为安全，传输保护依赖 HTTPS。</p>
+      </blockquote>
+
+      <h2 id="interview-auth" data-toc="Session、JWT 与 SSO">Session、JWT 和 SSO 是什么关系？</h2>
+      <blockquote>
+        <p>Session 通常在服务端保存登录状态，客户端持有会话标识；JWT 把声明和签名放进令牌，服务端可在不查询会话的情况下校验，但仍要处理过期、撤销和密钥安全；SSO 是多个系统共享一次登录的目标，可以使用集中 Session、OAuth2/OIDC 等多种方案实现，SSO 不等于 JWT。</p>
+      </blockquote>
+      <p><strong>常见追问：</strong>Token 应从哪里读取、怎样校验、为什么退出登录后未过期 JWT 仍可能有效。</p>
+
+      <h2 id="interview-https" data-toc="HTTP 与 HTTPS">HTTPS 比 HTTP 多了什么？</h2>
+      <blockquote>
+        <p>HTTPS 是 HTTP 运行在 TLS 之上。TLS 通过证书验证服务端身份，协商会话密钥，并对后续数据提供加密和完整性保护，从而降低窃听和篡改风险。它不能自动修复 SQL 注入、越权或弱密码等应用层漏洞。</p>
+      </blockquote>
+
+      <h2 id="interview-linux-troubleshoot" data-toc="线上排查">接口突然访问失败，你怎样排查？</h2>
+      <pre class="flow">先确认现象：超时、拒绝、4xx 还是 5xx
+  ↓
+检查域名、网络和端口是否可达
+  ↓
+检查进程与服务状态
+  ↓
+查看应用日志和系统资源
+  ↓
+检查数据库、Redis、MQ 等依赖
+  ↓
+结合变更记录缩小范围</pre>
+      <pre><code>systemctl status myapp
+journalctl -u myapp -n 200
+ss -lntp
+ps aux | grep java
+curl -v http://127.0.0.1:8080/health
+df -h
+free -h
+top</code></pre>
+      <p>回答排查题时先分层，不要一上来就“重启服务”。重启可能暂时恢复，但也可能破坏现场；应先保留日志、时间点、请求 ID 和关键指标。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="sso-single-sign-on">深入：单点登录 →</button>
+        <button class="jump-link" type="button" data-id="linux-common-commands">深入：Linux 后端运维 →</button>
+        <button class="jump-link" type="button" data-id="springboot-result-validation">项目：统一响应与异常处理 →</button>
       </p>
     `,
   },
