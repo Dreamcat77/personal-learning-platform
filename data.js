@@ -11,7 +11,7 @@ window.KNOWLEDGE = [
   {
     id: "interceptor-threadlocal",
     category: "Spring Boot 开发",
-    order: 60,
+    order: 70,
     title: "请求拦截与用户上下文",
     summary: "用 Interceptor 和 ThreadLocal 管理当前登录用户",
     related: ["sso-single-sign-on"],
@@ -1483,6 +1483,7 @@ HTTP 400 + Result.error(message)</pre>
     related: [
       "springboot-user-admin-crud",
       "springboot-result-validation",
+      "springboot-dynamic-sql-search",
       "java-spring-annotations",
     ],
     content: `
@@ -1576,6 +1577,149 @@ public Result&lt;PageResult&lt;User&gt;&gt; page(
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-user-admin-crud">基础：用户管理三层链路 →</button>
         <button class="jump-link" type="button" data-id="springboot-result-validation">前置：统一响应与参数校验 →</button>
+        <button class="jump-link" type="button" data-id="springboot-dynamic-sql-search">下一篇：动态 SQL 条件分页 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "springboot-dynamic-sql-search",
+    category: "Spring Boot 开发",
+    order: 60,
+    title: "MyBatis 动态 SQL：模糊查询与条件分页",
+    summary: "用 LIKE、if 和 where 扩展可选用户名筛选",
+    related: [
+      "springboot-mybatis-pagination",
+      "springboot-result-validation",
+      "springboot-user-admin-crud",
+      "java-spring-annotations",
+    ],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 项目实战</span>
+      <h1>MyBatis 动态 SQL：模糊查询与条件分页</h1>
+      <p class="lead">在基础分页上增加可选 username：不传时查询全部用户，传入时按用户名模糊筛选，并保证 total 和 records 使用完全相同的条件。</p>
+
+      <h2 id="dynamic-goal" data-toc="目标与链路">同一接口支持有条件和无条件</h2>
+      <pre><code>GET /user/list/page?pageNum=1&amp;pageSize=10
+GET /user/list/page?pageNum=1&amp;pageSize=10&amp;username=Zhang</code></pre>
+      <pre class="flow">Controller：接收 pageNum、pageSize、username
+  ↓
+Service：计算 offset，传递筛选条件
+  ↓
+Mapper：根据 username 决定是否拼 WHERE
+  ↓
+COUNT 条件总数 + SELECT 当前页
+  ↓
+Result&lt;PageResult&lt;User&gt;&gt;</pre>
+      <p><code>total</code> 是符合当前筛选条件的总记录数，不是整张表总数，也不是当前页的 <code>records.size()</code>。</p>
+
+      <h2 id="dynamic-like" data-toc="LIKE 模糊匹配">LIKE 与通配符</h2>
+      <table>
+        <thead><tr><th>条件</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td><code>LIKE 'Zhang%'</code></td><td>以 Zhang 开头</td></tr>
+          <tr><td><code>LIKE '%Zhang'</code></td><td>以 Zhang 结尾</td></tr>
+          <tr><td><code>LIKE '%Zhang%'</code></td><td>包含 Zhang</td></tr>
+        </tbody>
+      </table>
+      <pre><code>username LIKE CONCAT('%', #{username}, '%')</code></pre>
+      <p><code>CONCAT</code> 在参数两边添加通配符；<code>#{username}</code> 使用 MyBatis 参数绑定。不要把用户输入直接拼进原始 SQL 字符串。</p>
+
+      <h2 id="dynamic-tags" data-toc="动态 SQL 标签">script、if 与 where</h2>
+      <table>
+        <thead><tr><th>标签</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td><code>&lt;script&gt;</code></td><td>在注解 SQL 中启用动态 SQL</td></tr>
+          <tr><td><code>&lt;if test='...'&gt;</code></td><td>条件成立时才拼接片段</td></tr>
+          <tr><td><code>&lt;where&gt;</code></td><td>有条件时生成 WHERE，并处理开头多余的 AND / OR</td></tr>
+        </tbody>
+      </table>
+      <pre><code>&lt;where&gt;
+    &lt;if test='username != null and username != ""'&gt;
+        username LIKE CONCAT('%', #{username}, '%')
+    &lt;/if&gt;
+&lt;/where&gt;</code></pre>
+      <p><code>&lt;if&gt;</code> 必须写 <code>test=</code>，标签要成对闭合，并使用普通英文引号。这个条件不会排除全空格字符串，Service 可以先 trim，再把空串转成 null。</p>
+
+      <h2 id="dynamic-mapper" data-toc="Mapper 改造">COUNT 与列表条件必须一致</h2>
+      <pre><code>@Select("""
+        &lt;script&gt;
+        SELECT COUNT(*) FROM user
+        &lt;where&gt;
+            &lt;if test='username != null and username != ""'&gt;
+                username LIKE CONCAT('%', #{username}, '%')
+            &lt;/if&gt;
+        &lt;/where&gt;
+        &lt;/script&gt;
+        """)
+Long count(@Param("username") String username);</code></pre>
+      <pre><code>@Select("""
+        &lt;script&gt;
+        SELECT id, username, age
+        FROM user
+        &lt;where&gt;
+            &lt;if test='username != null and username != ""'&gt;
+                username LIKE CONCAT('%', #{username}, '%')
+            &lt;/if&gt;
+        &lt;/where&gt;
+        ORDER BY id ASC
+        LIMIT #{offset}, #{pageSize}
+        &lt;/script&gt;
+        """)
+List&lt;User&gt; selectPage(
+        @Param("offset") int offset,
+        @Param("pageSize") int pageSize,
+        @Param("username") String username);</code></pre>
+      <p>如果列表 SQL 有 username 条件，但 count 仍统计整表，就会出现 total=100、records 只有 2 条匹配数据的错误口径。两条 SQL 的筛选条件必须同步修改。</p>
+
+      <h2 id="dynamic-service-controller" data-toc="三层传参">Service 与 Controller 同步传参</h2>
+      <pre><code>public PageResult&lt;User&gt; page(
+        Integer pageNum, Integer pageSize, String username) {
+    int offset = (pageNum - 1) * pageSize;
+    Long total = userMapper.count(username);
+    List&lt;User&gt; records =
+            userMapper.selectPage(offset, pageSize, username);
+    return new PageResult&lt;&gt;(pageNum, pageSize, total, records);
+}</code></pre>
+      <pre><code>@GetMapping("/user/list/page")
+public Result&lt;PageResult&lt;User&gt;&gt; page(
+        @RequestParam(defaultValue = "1") Integer pageNum,
+        @RequestParam(defaultValue = "10") Integer pageSize,
+        @RequestParam(required = false) String username) {
+
+    if (pageNum &lt; 1 || pageSize &lt; 1 || pageSize &gt; 100) {
+        return Result.error("分页参数错误");
+    }
+    return Result.success(
+            "分页查询成功",
+            userService.page(pageNum, pageSize, username));
+}</code></pre>
+      <p><code>@RequestParam</code> 属于 Spring MVC，从 HTTP 查询参数取值；<code>@Param</code> 属于 MyBatis，给 SQL 参数命名。Mapper 方法增加 username 后，Service 和 Controller 的调用也要同步更新。</p>
+
+      <h2 id="dynamic-debug" data-toc="分层排错">常见错误与分层排查</h2>
+      <table>
+        <thead><tr><th>现象</th><th>检查位置</th></tr></thead>
+        <tbody>
+          <tr><td><code>&lt;if&gt;</code> 缺少 test</td><td>改成 <code>&lt;if test='...'&gt;</code></td></tr>
+          <tr><td><code>&lt;/script&gt;</code> 拼错或未闭合</td><td>检查 XML 标签开始、结束和英文引号</td></tr>
+          <tr><td>列名写成 <code>userame</code></td><td>核对数据库真实字段名</td></tr>
+          <tr><td>查询返回全部数据</td><td>确认 SELECT 保留 ORDER BY 和 LIMIT</td></tr>
+          <tr><td>方法参数数量不匹配</td><td>Mapper 签名变化后同步 Service 调用</td></tr>
+          <tr><td><code>getaddrinfo ENOTFOUND user</code></td><td>请求地址不完整；先检查协议、主机和端口</td></tr>
+        </tbody>
+      </table>
+      <p>先判断错误发生在哪一层：请求未发出、Java 编译失败、MyBatis 解析失败和数据库 SQL 错误需要不同的排查路径。</p>
+
+      <h2 id="dynamic-tests" data-toc="测试与边界">测试清单与性能边界</h2>
+      <ul>
+        <li>传 username：total 为全部匹配数，records 为当前页。</li>
+        <li>不传 username：不生成 WHERE，正常查询全部分页数据。</li>
+        <li>不存在的用户名：<code>total = 0</code>、<code>records = []</code>。</li>
+        <li>pageSize=2：records 最多两条，但 total 不受当前页大小影响。</li>
+      </ul>
+      <p><code>LIKE '%关键词%'</code> 通常难以高效利用普通前缀索引；大 offset 也会变慢，数据频繁变化时还可能重复或遗漏。数据规模增长后可考虑前缀匹配、专用搜索方案或游标分页。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-mybatis-pagination">上一篇：基础分页查询 →</button>
+        <button class="jump-link" type="button" data-id="springboot-result-validation">相关：统一响应与参数校验 →</button>
       </p>
     `,
   },
