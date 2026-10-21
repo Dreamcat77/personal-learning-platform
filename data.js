@@ -11,7 +11,7 @@ window.KNOWLEDGE = [
   {
     id: "interceptor-threadlocal",
     category: "Spring Boot 开发",
-    order: 30,
+    order: 60,
     title: "请求拦截与用户上下文",
     summary: "用 Interceptor 和 ThreadLocal 管理当前登录用户",
     related: ["sso-single-sign-on"],
@@ -1057,57 +1057,25 @@ Vue / Axios
     id: "springboot-user-admin-crud",
     category: "Spring Boot 开发",
     order: 20,
-    title: "用户管理 CRUD：统一响应、校验与分页",
-    summary: "完成 CRUD、统一响应和参数校验，并用 MyBatis 实现分页查询",
+    title: "用户管理项目：搭建与查询链路",
+    summary: "搭建 Spring Boot、MyBatis、MySQL 三层项目并跑通查询",
     related: [
       "springboot-fullstack-roadmap",
       "java-spring-annotations",
       "java-object-json-serialize",
       "java-object-create-dto",
       "what-is-intellij-idea",
+      "springboot-post-create-user",
+      "springboot-result-validation",
+      "springboot-mybatis-pagination",
     ],
     content: `
       <span class="article-tag">Spring Boot 开发 · 项目实战</span>
-      <h1>用户管理 CRUD：统一响应、校验与分页</h1>
-      <p class="lead">这个项目已经从“跑通查询与新增”推进到<strong>完整 CRUD + 统一响应 + 参数校验 + 全局异常处理 + 分页查询</strong>。核心链路是：客户端请求 → Controller 接收参数 → 参数校验 → Service 处理业务 → Mapper 操作数据库 → Result 包装响应 → 客户端接收 JSON。</p>
+      <h1>用户管理项目：搭建与查询链路</h1>
+      <p class="lead">先用一个最小用户管理项目跑通 <strong>HTTP 请求 → Controller → Service → Mapper → MySQL → JSON 响应</strong>。这一篇只处理项目骨架、数据库连接和查询；POST 新增、统一响应与分页分别放在后续文章。</p>
 
-      <h2 id="user-admin-goal" data-toc="目标与学习方式">项目目标与学习方式</h2>
-      <p>用需求带动知识学习：</p>
-      <pre class="flow">遇到需求
-  ↓
-先写出可运行的代码
-  ↓
-遇到问题时补对应理论
-  ↓
-理解并修正代码
-  ↓
-继续下一个功能</pre>
-      <p>阶段目标是能独立解释并实现：</p>
-      <pre class="flow">Controller：接收请求、返回结果
-      ↓
-Service：组织业务逻辑
-      ↓
-Mapper：执行数据库操作
-      ↓
-MySQL：保存业务数据</pre>
-
-      <h2 id="user-admin-environment" data-toc="环境与技术栈">环境与技术栈</h2>
-      <table>
-        <thead><tr><th>工具 / 技术</th><th>本项目中的作用</th></tr></thead>
-        <tbody>
-          <tr><td>Windows 11</td><td>本地开发环境</td></tr>
-          <tr><td>IntelliJ IDEA</td><td>编写、运行和调试代码</td></tr>
-          <tr><td>JDK 21</td><td>编译和运行 Java</td></tr>
-          <tr><td>Spring Boot</td><td>搭建 Web 后端应用</td></tr>
-          <tr><td>Maven</td><td>管理依赖、编译和打包</td></tr>
-          <tr><td>MyBatis</td><td>通过 Mapper 执行 SQL</td></tr>
-          <tr><td>Docker MySQL</td><td>提供本地数据库服务</td></tr>
-          <tr><td>Lombok</td><td>减少 getter、setter 等模板代码</td></tr>
-        </tbody>
-      </table>
-      <p>笔记中验证过的组合是 Spring Boot 3.5.6、JDK 21、MyBatis 3.0.4 和 MySQL 8。它代表该项目当时可工作的版本组合，不意味着其他版本一定不能使用；新项目应优先按 Spring Initializr 和各组件官方兼容说明选择版本。</p>
-
-      <h2 id="user-admin-structure" data-toc="项目结构">创建项目与目录结构</h2>
+      <h2 id="user-admin-structure" data-toc="项目骨架">项目骨架与启动</h2>
+      <p>验证过的学习环境是 JDK 21、Spring Boot 3.5.6、MyBatis 3.0.4、MySQL 8、Maven 和 Lombok。版本不是固定答案，新项目应以 Spring Initializr 和组件兼容说明为准。</p>
       <pre class="flow">user-admin/
 ├── pom.xml
 └── src/main/
@@ -1119,70 +1087,21 @@ MySQL：保存业务数据</pre>
     │   └── entity/
     └── resources/
         └── application.yml</pre>
-      <p><code>pom.xml</code> 描述项目依赖和构建方式；Java 代码放在 <code>src/main/java</code>，配置文件放在 <code>src/main/resources</code>。</p>
-
-      <h2 id="user-admin-startup" data-toc="启动过程">Spring Boot 如何启动</h2>
-      <pre><code>@SpringBootApplication
-public class UserAdminApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(UserAdminApplication.class, args);
-    }
-}</code></pre>
       <pre class="flow">执行 main 方法
   ↓
 SpringApplication.run()
   ↓
-创建 Spring 容器
-  ↓
-从启动类所在包向下扫描组件
-  ↓
-创建并管理 Bean
+创建容器并扫描组件
   ↓
 启动内嵌 Web 服务器
   ↓
 监听端口，等待 HTTP 请求</pre>
-      <p><code>@SpringBootApplication</code> 是组合注解，包含自动配置、组件扫描和配置类等能力。Spring Boot 3 默认使用内嵌 Tomcat，但也可以替换为其他受支持的 Web 服务器。</p>
-
-      <h2 id="user-admin-hello" data-toc="第一个接口">第一个 Hello 接口</h2>
-      <pre><code>@RestController
-public class HelloController {
-
-    @GetMapping("/hello")
-    public String hello() {
-        return "Hello Spring Boot";
-    }
-}</code></pre>
-      <p>访问 <code>GET http://localhost:8080/hello</code> 时，Spring 根据路径找到 <code>hello()</code> 方法，并把返回值写入 HTTP 响应。</p>
       <ul>
-        <li><code>@RestController</code>：声明这个类负责处理 Web 请求，方法返回值直接作为响应体。</li>
-        <li><code>@GetMapping("/hello")</code>：把 GET 请求路径映射到这个方法。</li>
-        <li><code>return</code>：返回给客户端的数据，不是页面跳转。</li>
+        <li><code>controller</code>：接收请求并返回响应。</li>
+        <li><code>service</code>：组织业务规则与调用流程。</li>
+        <li><code>mapper</code>：执行 SQL 并映射结果。</li>
+        <li><code>entity</code>：描述数据库中的用户数据。</li>
       </ul>
-
-      <h2 id="user-admin-json" data-toc="对象返回 JSON">Java 对象为什么变成 JSON</h2>
-      <pre><code>@Data
-public class User {
-    private Long id;
-    private String username;
-    private Integer age;
-}</code></pre>
-      <pre><code>@GetMapping("/user")
-public User user() {
-    User user = new User();
-    user.setId(1L);
-    user.setUsername("张三");
-    user.setAge(20);
-    return user;
-}</code></pre>
-      <pre class="flow">Controller 返回 User 对象
-  ↓
-Spring MVC 选择消息转换器
-  ↓
-Jackson 将对象序列化
-  ↓
-HTTP 响应中的 JSON</pre>
-      <p><code>@Data</code> 由 Lombok 提供，通常会生成 getter、setter、<code>toString</code>、<code>equals</code> 和 <code>hashCode</code>。它减少模板代码，但对象和方法仍然真实存在于编译结果中。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="java-object-json-serialize">深入：Java 对象、JSON 与序列化 →</button>
         <button class="jump-link" type="button" data-id="java-spring-annotations/ann-lombok">相关：Lombok @Data →</button>
@@ -1277,133 +1196,11 @@ Jackson 序列化为 JSON
   ↓
 返回客户端</pre>
 
-      <h2 id="user-admin-create" data-toc="POST 新增用户">POST 新增用户：完整链路</h2>
-      <p>新增需求是：客户端提交用户名和年龄，服务端把数据保存到 MySQL。请求示例：</p>
-      <pre><code>POST http://localhost:8080/user
-Content-Type: application/json
-
-{
-    "username": "WangWu",
-    "age": 18
-}</code></pre>
-      <pre class="flow">客户端 / Postman / Apifox
-  ↓ POST /user + JSON
-UserController.insert(@RequestBody User user)
-  ↓ JSON 反序列化为 User 对象
-UserService.insert(user)
-  ↓
-UserMapper.insert(user)
-  ↓ MyBatis 绑定参数
-INSERT INTO user(username, age) VALUES (?, ?)
-  ↓
-MySQL 新增一行，返回受影响行数 rows
-  ↓ rows == 1
-客户端收到“新增成功”</pre>
-      <p>和 GET 查询的区别是：GET 把数据库数据取出来返回；POST 把请求数据送进来并执行 <code>INSERT</code> 保存。</p>
-
-      <h3>Mapper：声明 INSERT 和参数</h3>
-      <pre><code>@Mapper
-public interface UserMapper {
-
-    @Select("SELECT id, username, age FROM user")
-    List&lt;User&gt; selectAll();
-
-    @Insert("INSERT INTO user (username, age) VALUES (#{username}, #{age})")
-    int insert(User user);
-}</code></pre>
-      <p><code>@Insert</code> 告诉 MyBatis：调用这个接口方法时执行对应的 INSERT SQL。<code>#{username}</code> 和 <code>#{age}</code> 来自传入的 <code>User</code> 对象属性，近似会变成带参数绑定的：</p>
-      <pre><code>INSERT INTO user (username, age) VALUES (?, ?)</code></pre>
-      <p>这里不是简单地把字符串拼进 SQL；MyBatis 会绑定参数，这也是避免常见 SQL 注入问题的重要原因之一。</p>
-      <p>Mapper 是接口也没关系：MyBatis 会在运行时创建代理对象，按照注解中的 SQL 执行数据库操作，不需要自己手写 JDBC 连接和结果处理模板。</p>
-
-      <h3><code>int insert(User user)</code> 到底是什么意思</h3>
-      <pre class="flow">int          insert       (User user)
-返回值类型    方法名          参数：类型 + 变量名</pre>
-      <ul>
-        <li><code>int</code>：执行后返回整数，通常表示受影响的行数。</li>
-        <li><code>insert</code>：方法名，表示新增操作。</li>
-        <li><code>User user</code>：接收一个 User 对象。</li>
-        <li>接口方法声明以分号结束，不需要方法体。</li>
-      </ul>
-      <p>新增一行时通常得到 <code>rows == 1</code>；这个 <code>1</code> 表示影响了一行，<strong>不是新用户的 ID</strong>。自增 ID 由 MySQL 根据 <code>AUTO_INCREMENT</code> 生成。</p>
-
-      <h3>Service：传递对象并保留业务层</h3>
-      <pre><code>@Service
-public class UserService {
-
-    private final UserMapper userMapper;
-
-    public UserService(UserMapper userMapper) {
-        this.userMapper = userMapper;
-    }
-
-    public List&lt;User&gt; list() {
-        return userMapper.selectAll();
-    }
-
-    public int insert(User user) {
-        return userMapper.insert(user);
-    }
-}</code></pre>
-      <p>当前新增只调用一行 Mapper，但以后可以在 Service 中加入用户名重复检查、业务规则、事务和日志。Controller 接收请求，Mapper 专注 SQL，职责仍然清晰。</p>
-      <p>要区分方法<strong>定义</strong>和<strong>调用</strong>：</p>
-      <pre><code>// 定义：声明参数类型和变量名
-int insert(User user);
-
-// 调用：只传入已有变量
-userMapper.insert(user);</code></pre>
-      <p>不能把 <code>userMapper.insert(User user)</code> 当作调用写法；调用时不能重复声明参数类型。</p>
-
-      <h3>第一阶段 Controller：接收 JSON 并判断结果</h3>
-      <pre><code>@PostMapping("/user")
-public String insert(@RequestBody User user) {
-    int rows = userService.insert(user);
-    if (rows == 1) {
-        return "新增成功";
-    }
-    return "新增失败";
-}</code></pre>
-      <p>这是项目第一阶段直接返回字符串的写法；后续已改为返回统一的 <code>Result&lt;T&gt;</code>。<code>@RequestBody</code> 让 Spring MVC 从 HTTP Body 读取 JSON，并通过 Jackson 反序列化成 <code>User</code> 对象。近似可以理解成：</p>
-      <pre><code>User user = new User();
-user.setUsername("WangWu");
-user.setAge(18);</code></pre>
-      <p>如果把 Service 错写成 <code>public User insert()</code>，就会同时出现三个问题：没有接收待新增对象、返回类型与 Mapper 的 <code>int</code> 不匹配、调用时错误地声明了 <code>User user</code>。正确结构是 <code>public int insert(User user)</code>。</p>
-
-      <h2 id="user-admin-post-test" data-toc="测试 POST 接口">如何测试 POST 新增</h2>
-      <p>浏览器地址栏通常发送 GET，不能只把 POST 地址粘进去；新增需要请求方法、请求头和 JSON Body。</p>
-      <h3>Postman / Apifox</h3>
-      <ol>
-        <li>请求方式选择 <code>POST</code>。</li>
-        <li>URL 填 <code>http://localhost:8080/user</code>。</li>
-        <li>Body 选择 raw，格式选择 JSON。</li>
-        <li>填写 <code>{"username":"WangWu","age":18}</code> 并发送。</li>
-        <li>第一阶段正常新增一行会返回 <code>新增成功</code>；统一响应阶段则返回包含 <code>code</code>、<code>message</code>、<code>data</code> 的 JSON。</li>
-      </ol>
-      <h3>Windows PowerShell</h3>
-      <pre><code>Invoke-RestMethod -Uri "http://localhost:8080/user" -Method Post -ContentType "application/json" -Body '{"username":"WangWu","age":18}'</code></pre>
-      <p>测试前确认 Spring Boot 应用和 Docker 中的 MySQL 都在运行。接口返回成功后，再执行 SQL 验证数据：</p>
-      <pre><code>USE user_admin;
-
-SELECT * FROM user;
-
-SELECT id, username, age
-FROM user
-WHERE username = 'WangWu';</code></pre>
-      <p>接口返回“新增成功”说明代码判断通过；SQL 查询能确认数据确实落到了数据库中。自增 ID 不一定是 3，要以数据库实际状态为准。</p>
-
-      <h2 id="user-admin-create-pitfalls" data-toc="新增常见错误">POST 新增常见错误</h2>
-      <table>
-        <thead><tr><th>问题</th><th>原因</th><th>正确思路</th></tr></thead>
-        <tbody>
-          <tr><td><code>public User insert()</code></td><td>没有参数，且返回类型不是 Mapper 的 int</td><td><code>public int insert(User user)</code></td></tr>
-          <tr><td><code>insert(User user)</code> 用在调用处</td><td>调用时重复声明参数类型</td><td><code>insert(user)</code></td></tr>
-          <tr><td>忘记 <code>@RequestBody</code></td><td>请求 JSON 无法按预期绑定到 User</td><td><code>@RequestBody User user</code></td></tr>
-          <tr><td>把返回的 1 当成用户 ID</td><td>MyBatis INSERT 返回受影响行数</td><td>新 ID 由数据库自增生成</td></tr>
-          <tr><td>删除原来的 <code>selectAll()</code></td><td>新增功能不应破坏已有查询</td><td>在 Mapper、Service、Controller 中追加方法</td></tr>
-          <tr><td><code>#{username}</code> 拼错</td><td>参数名与 User 属性不一致</td><td>与 <code>username</code>、<code>age</code> 保持一致</td></tr>
-        </tbody>
-      </table>
-      <p>数据库连接失败或 SQL 执行失败时，异常可能直接返回错误响应，不一定会走到“新增失败”。本项目后续已经加入参数校验、统一异常处理和统一响应结构；系统异常仍应记录日志，并避免把堆栈直接暴露给客户端。</p>
+      <h2 id="user-admin-create-next" data-toc="继续新增接口">继续实现 POST 新增</h2>
+      <p>查询链路跑通后，下一步把请求 JSON 反序列化为 User，通过三层调用执行 INSERT。新增接口的完整代码、测试方法和常见错误单独整理，避免和项目搭建混在一起。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-post-create-user">下一篇：POST 新增用户完整链路 →</button>
+      </p>
 
       <h2 id="user-admin-troubleshooting" data-toc="常见错误排查">两个常见启动错误</h2>
       <h3>找不到 UserMapper Bean</h3>
@@ -1421,42 +1218,161 @@ WHERE username = 'WangWu';</code></pre>
       </ol>
       <p>把项目切换到一组已验证版本可以帮助定位问题，但不能简单归因于“某个 Spring Boot 大版本一定和 MyBatis 不兼容”。根因仍应以依赖树和启动日志为准。</p>
 
-      <h2 id="user-admin-progress" data-toc="当前进度">当前进度：CRUD 与分页已完成</h2>
-      <p>CRUD 分别是 Create、Read、Update、Delete。当前五个基础接口和一个分页接口已经统一为 <code>Result&lt;T&gt;</code> 响应，并通过 Postman 验证：</p>
+      <h2 id="user-admin-next" data-toc="后续学习">后续学习：响应规范与分页</h2>
+      <p>基础查询和新增跑通后，再沿两条独立主线继续：</p>
+      <ul>
+        <li><strong>接口规范</strong>：统一响应 <code>Result&lt;T&gt;</code>、Bean Validation 参数校验和全局异常处理。</li>
+        <li><strong>列表能力</strong>：使用 MyBatis 的 COUNT、LIMIT 和 <code>PageResult&lt;T&gt;</code> 实现分页。</li>
+      </ul>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-result-validation">下一篇：统一响应、校验与异常处理 →</button>
+        <button class="jump-link" type="button" data-id="springboot-mybatis-pagination">下一篇：MyBatis 分页查询 →</button>
+      </p>
+
+      <h2 id="user-admin-interview" data-toc="面试表达">面试怎么表达</h2>
+      <h3>Spring Boot 请求流程</h3>
+      <blockquote>
+        <p>客户端请求先由内嵌 Web 服务器接收，再交给 Spring MVC 的 DispatcherServlet。DispatcherServlet 根据映射找到 Controller 方法；POST 请求中的 JSON 会先由消息转换器反序列化成 Java 对象，Controller 再调用 Service，Service 调用 Mapper 访问数据库。查询结果或操作结果最后由消息转换器写回 HTTP 响应。</p>
+      </blockquote>
+      <h3>三层架构</h3>
+      <blockquote>
+        <p>Controller 负责协议层的请求和响应，Service 负责业务规则与流程，Mapper 负责数据访问。分层可以降低职责耦合，让代码更容易维护和测试。</p>
+      </blockquote>
+      <h3>MyBatis</h3>
+      <blockquote>
+        <p>MyBatis 是持久层框架，通过 Mapper 和 SQL 映射帮助 Java 程序访问数据库，减少手写 JDBC 的连接管理、参数设置和结果集转换代码，同时保留对 SQL 的直接控制。</p>
+      </blockquote>
+    `,
+  },
+  {
+    id: "springboot-post-create-user",
+    category: "Spring Boot 开发",
+    order: 30,
+    title: "Spring Boot POST 新增：从 JSON 到 INSERT",
+    summary: "理解 @RequestBody、三层参数传递和 MyBatis INSERT",
+    related: [
+      "springboot-user-admin-crud",
+      "springboot-result-validation",
+      "java-object-json-serialize",
+      "java-object-create-dto",
+    ],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 项目实战</span>
+      <h1>Spring Boot POST 新增：从 JSON 到 INSERT</h1>
+      <p class="lead">查询是把数据库数据取出来，新增则是把客户端 JSON 传入后端，经过 Controller、Service、Mapper 写入 MySQL。</p>
+
+      <h2 id="post-flow" data-toc="完整链路">POST 新增完整链路</h2>
+      <pre><code>POST /user
+Content-Type: application/json
+
+{
+  "username": "WangWu",
+  "age": 18
+}</code></pre>
+      <pre class="flow">JSON 请求
+  ↓ @RequestBody 反序列化
+UserController.add(User user)
+  ↓
+UserService.add(user)
+  ↓
+UserMapper.insert(user)
+  ↓ MyBatis 参数绑定
+INSERT INTO user(username, age) VALUES (?, ?)
+  ↓
+返回受影响行数 rows</pre>
+
+      <h2 id="post-mapper" data-toc="Mapper INSERT">Mapper：SQL 与参数绑定</h2>
+      <pre><code>@Insert("INSERT INTO user (username, age) "
+      + "VALUES (#{username}, #{age})")
+int insert(User user);</code></pre>
+      <ul>
+        <li><code>int</code>：返回受影响行数，新增一行通常是 1，不是新用户 ID。</li>
+        <li><code>User user</code>：接收待新增对象。</li>
+        <li><code>#{username}</code>：读取 User 属性并进行参数绑定，不是直接拼 SQL 字符串。</li>
+      </ul>
+      <p>Mapper 虽然是接口，MyBatis 会在运行时创建代理对象，负责执行 SQL 和处理结果。</p>
+
+      <h2 id="post-service" data-toc="Service 传递">Service：保留业务层</h2>
+      <pre><code>@Service
+public class UserService {
+    private final UserMapper userMapper;
+
+    public UserService(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
+
+    public int add(User user) {
+        return userMapper.insert(user);
+    }
+}</code></pre>
+      <p>即使当前只有一行调用，也应保留 Service。以后用户名查重、业务规则、事务和日志都应在这里组织，而不是堆进 Controller。</p>
+      <pre><code>// 方法定义：包含类型和变量名
+int insert(User user);
+
+// 方法调用：只传已有变量
+userMapper.insert(user);</code></pre>
+
+      <h2 id="post-controller" data-toc="Controller 接参">Controller：@RequestBody 接收 JSON</h2>
+      <pre><code>@PostMapping("/user")
+public String add(@RequestBody User user) {
+    int rows = userService.add(user);
+    return rows &gt; 0 ? "新增成功" : "新增失败";
+}</code></pre>
+      <p><code>@RequestBody</code> 让 Spring MVC 读取 HTTP Body，并通过 Jackson 把 JSON 反序列化为 User。直接返回字符串是第一阶段写法；下一阶段应改成统一的 <code>Result&lt;Void&gt;</code>。</p>
+
+      <h2 id="post-test" data-toc="接口测试">测试 POST 接口</h2>
+      <p>浏览器地址栏通常发送 GET，不能用来完整测试 POST。使用 Postman、Apifox 或 PowerShell：</p>
+      <pre><code>Invoke-RestMethod -Uri "http://localhost:8080/user" -Method Post -ContentType "application/json" -Body '{"username":"WangWu","age":18}'</code></pre>
+      <p>接口成功后再查询数据库，确认数据确实落库。接口返回成功只说明代码分支通过，数据库结果才是最终证据。</p>
+
+      <h2 id="post-pitfalls" data-toc="常见错误">常见错误速查</h2>
       <table>
-        <thead><tr><th>能力</th><th>HTTP 接口</th><th>响应类型</th><th>状态</th></tr></thead>
+        <thead><tr><th>问题</th><th>正确写法或理解</th></tr></thead>
         <tbody>
-          <tr><td>查询列表</td><td><code>GET /user/list</code></td><td><code>Result&lt;List&lt;User&gt;&gt;</code></td><td>已完成</td></tr>
-          <tr><td>按 ID 查询</td><td><code>GET /user/list/{id}</code></td><td><code>Result&lt;User&gt;</code></td><td>已完成</td></tr>
-          <tr><td>新增用户</td><td><code>POST /user</code></td><td><code>Result&lt;Void&gt;</code></td><td>已完成</td></tr>
-          <tr><td>修改用户</td><td><code>PUT /user</code></td><td><code>Result&lt;Void&gt;</code></td><td>已完成</td></tr>
-          <tr><td>删除用户</td><td><code>DELETE /user/delete</code></td><td><code>Result&lt;Void&gt;</code></td><td>已完成</td></tr>
-          <tr><td>分页查询</td><td><code>GET /user/list/page</code></td><td><code>Result&lt;PageResult&lt;User&gt;&gt;</code></td><td>已完成</td></tr>
+          <tr><td><code>public User insert()</code></td><td><code>public int insert(User user)</code></td></tr>
+          <tr><td>调用时写 <code>insert(User user)</code></td><td>调用只写 <code>insert(user)</code></td></tr>
+          <tr><td>忘记 <code>@RequestBody</code></td><td>请求 JSON 无法按预期绑定对象</td></tr>
+          <tr><td>把 rows=1 当成用户 ID</td><td>它表示影响一行；ID 由数据库生成</td></tr>
+          <tr><td><code>#{username}</code> 拼错</td><td>占位名称要与 User 属性一致</td></tr>
         </tbody>
       </table>
-      <p>成功和失败响应现在都包含 <code>code</code>、<code>message</code>、<code>data</code>。要注意：JSON 中的业务码和 HTTP 状态码是两个概念；只有使用 <code>ResponseEntity</code> 等方式设置响应状态，HTTP 状态码才会随之改变。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-user-admin-crud">上一篇：项目搭建与查询链路 →</button>
+        <button class="jump-link" type="button" data-id="springboot-result-validation">下一篇：统一响应与参数校验 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "springboot-result-validation",
+    category: "Spring Boot 开发",
+    order: 40,
+    title: "Spring Boot 统一响应、参数校验与异常处理",
+    summary: "用 Result<T>、Bean Validation 和全局异常处理规范 CRUD 接口",
+    related: [
+      "springboot-user-admin-crud",
+      "springboot-mybatis-pagination",
+      "java-object-create-dto",
+      "java-spring-annotations",
+    ],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 项目实战</span>
+      <h1>Spring Boot 统一响应、参数校验与异常处理</h1>
+      <p class="lead">基础 CRUD 跑通后，下一步不是继续堆接口，而是统一成功与失败的 JSON 格式，并把参数校验异常集中处理。</p>
 
-      <h2 id="user-admin-result" data-toc="统一响应 Result">统一响应 Result&lt;T&gt;</h2>
-      <p>三个核心类的职责要分清：</p>
+      <h2 id="result-responsibilities" data-toc="三个职责">Controller、Result、异常处理器</h2>
       <ul>
-        <li><strong>Controller</strong>：接收请求、获取参数、调用 Service，并返回结果。</li>
-        <li><strong>Result</strong>：包装成功或失败响应，不是专门存储异常的类。</li>
-        <li><strong>GlobalExceptionHandler</strong>：捕获指定异常，并将其转换为统一响应。</li>
+        <li><strong>Controller</strong>：接收请求、调用 Service、返回结果。</li>
+        <li><strong>Result</strong>：定义统一响应结构，同时包装成功和失败数据。</li>
+        <li><strong>GlobalExceptionHandler</strong>：捕获指定异常，将异常转换成统一响应。</li>
       </ul>
+      <p><code>Result.code</code> 是项目业务码，不一定等于 HTTP 状态码。直接返回 <code>Result</code> 时 HTTP 可能仍是 200；使用 <code>ResponseEntity.badRequest()</code> 才会把 HTTP 状态设置为 400。</p>
+
+      <h2 id="result-generic" data-toc="Result 泛型">Result&lt;T&gt; 与工厂方法</h2>
       <pre><code>@Data
 public class Result&lt;T&gt; {
-
     private Integer code;
     private String message;
     private T data;
-
-    public static &lt;T&gt; Result&lt;T&gt; success(T data) {
-        Result&lt;T&gt; result = new Result&lt;&gt;();
-        result.setCode(200);
-        result.setMessage("操作成功");
-        result.setData(data);
-        return result;
-    }
 
     public static &lt;T&gt; Result&lt;T&gt; success(String message, T data) {
         Result&lt;T&gt; result = new Result&lt;&gt;();
@@ -1474,25 +1390,17 @@ public class Result&lt;T&gt; {
         return result;
     }
 }</code></pre>
-      <p><code>T</code> 决定 <code>data</code> 中承载的数据类型：单个用户用 <code>Result&lt;User&gt;</code>，列表用 <code>Result&lt;List&lt;User&gt;&gt;</code>，无需业务数据时用 <code>Result&lt;Void&gt;</code>。两个 <code>success</code> 方法参数列表不同，属于方法重载。</p>
+      <p><code>T</code> 决定 data 的类型：单个用户是 <code>Result&lt;User&gt;</code>，列表是 <code>Result&lt;List&lt;User&gt;&gt;</code>，没有响应数据时是 <code>Result&lt;Void&gt;</code>。</p>
+      <p>错误工厂方法也必须声明 <code>&lt;T&gt;</code>。如果固定返回 <code>Result&lt;Void&gt;</code>，需要返回 <code>Result&lt;User&gt;</code> 的接口就会编译失败。泛型方法能根据调用位置推断正确类型：</p>
+      <pre><code>return Result.error("用户不存在");</code></pre>
 
-      <h3>为什么 error 也要声明泛型</h3>
-      <p>如果错误方法固定返回 <code>Result&lt;Void&gt;</code>，需要 <code>Result&lt;User&gt;</code> 的 Controller 就会出现“无法转换”的编译错误。将它写成泛型静态方法：</p>
-      <pre><code>public static &lt;T&gt; Result&lt;T&gt; error(String message)</code></pre>
-      <p>Java 就能根据调用位置推断类型，因此下面三种返回类型都可以直接调用 <code>Result.error(...)</code>：</p>
-      <pre><code>Result&lt;User&gt;
-Result&lt;List&lt;User&gt;&gt;
-Result&lt;Void&gt;</code></pre>
-      <p>错误提示应该放在 <code>message</code> 中，不要设计成 <code>error(T data)</code> 后又把提示字符串塞进 <code>data</code>，否则字段语义会混乱。</p>
-
-      <h2 id="user-admin-validation" data-toc="参数校验">参数校验：注解与触发方式</h2>
+      <h2 id="result-validation" data-toc="参数校验">Bean Validation 参数校验</h2>
       <table>
-        <thead><tr><th>注解</th><th>适用类型</th><th>作用</th></tr></thead>
+        <thead><tr><th>注解</th><th>适用类型</th><th>规则</th></tr></thead>
         <tbody>
-          <tr><td><code>@NotBlank</code></td><td>字符串</td><td>不能为 null、空字符串或全空白字符串</td></tr>
-          <tr><td><code>@NotNull</code></td><td><code>Integer</code>、<code>Long</code> 等对象类型</td><td>不能为 null</td></tr>
-          <tr><td><code>@Min(0)</code></td><td>数值</td><td>不能小于指定下限</td></tr>
-          <tr><td><code>@Max(150)</code></td><td>数值</td><td>不能大于指定上限</td></tr>
+          <tr><td><code>@NotBlank</code></td><td>String</td><td>不能为 null、空串或全空白</td></tr>
+          <tr><td><code>@NotNull</code></td><td>对象类型</td><td>不能为 null</td></tr>
+          <tr><td><code>@Min</code> / <code>@Max</code></td><td>数值</td><td>限制数值范围</td></tr>
         </tbody>
       </table>
       <pre><code>@NotBlank(message = "名字不能为空")
@@ -1502,19 +1410,16 @@ private String username;
 @Min(value = 0, message = "年龄不能小于0")
 @Max(value = 150, message = "年龄不能大于150")
 private Integer age;</code></pre>
-      <p><code>@NotBlank</code> 只适合字符串；数值字段通常使用包装类型和 <code>@NotNull</code>，再配合 <code>@Min</code>、<code>@Max</code> 限制范围。包装类型 <code>Integer</code> 可以表达“请求未提供值”，基本类型 <code>int</code> 则不能为 null。</p>
-      <p>字段注解不会自动执行。项目需要 Bean Validation 实现依赖（例如 <code>spring-boot-starter-validation</code>），Controller 参数还要使用 <code>@Valid</code> 触发校验：</p>
+      <p>字段注解需要 Validation 依赖和 <code>@Valid</code> 才会执行：</p>
       <pre><code>@PostMapping("/user")
 public Result&lt;Void&gt; add(@Valid @RequestBody User user) {
-    int rows = userService.add(user);
-    return rows &gt; 0
+    return userService.add(user) &gt; 0
             ? Result.success("新增成功", null)
             : Result.error("新增失败");
 }</code></pre>
-      <p><code>@RequestBody</code> 负责把 JSON 转成对象，<code>@Valid</code> 负责执行对象字段上的校验规则，两者职责不同。新增和修改对 ID 的要求通常不同；项目继续演进时，优先建立 <code>UserCreateRequest</code>、<code>UserUpdateRequest</code> 等 DTO，而不是让一个实体承担所有场景的校验规则。</p>
+      <p><code>@RequestBody</code> 负责把 JSON 转成对象，<code>@Valid</code> 负责触发字段规则。新增和修改对 ID 的要求不同，项目继续演进时应使用 <code>UserCreateRequest</code>、<code>UserUpdateRequest</code> 等 DTO 分开校验。</p>
 
-      <h2 id="user-admin-exception" data-toc="全局异常处理">全局异常处理器</h2>
-      <p>校验失败时，Spring MVC 会抛出 <code>MethodArgumentNotValidException</code>。全局异常处理器提取字段错误，再返回统一 JSON：</p>
+      <h2 id="result-exception" data-toc="全局异常处理">全局处理校验异常</h2>
       <pre><code>@RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -1528,121 +1433,90 @@ public class GlobalExceptionHandler {
                     .getFieldError()
                     .getDefaultMessage();
         }
-
         return ResponseEntity.badRequest()
                 .body(Result.error(message));
     }
 }</code></pre>
-      <pre class="flow">请求 JSON
-  ↓
-@RequestBody 转成 User
-  ↓
-@Valid 执行字段校验
-  ↓ 失败
+      <pre class="flow">JSON → @RequestBody → @Valid
+  ↓ 校验失败
 MethodArgumentNotValidException
   ↓
 GlobalExceptionHandler
   ↓
 HTTP 400 + Result.error(message)</pre>
-      <p><code>getDefaultMessage()</code> 返回的是字符串。如果处理方法声明返回 <code>ResponseEntity&lt;Result&lt;Void&gt;&gt;</code>，就不能直接返回这个字符串；必须先用 <code>Result.error(message)</code> 包装，再放入 <code>ResponseEntity</code>。</p>
-      <p>当前实现只取第一个字段错误，适合入门阶段。以后可以收集所有字段错误，并继续区分参数校验异常、业务异常和未知系统异常。</p>
+      <p><code>getDefaultMessage()</code> 返回 String，不能直接从声明为 <code>ResponseEntity&lt;Result&lt;Void&gt;&gt;</code> 的方法返回；必须先包装成 Result。当前取第一个字段错误即可，后续可扩展为错误列表、业务异常和系统异常。</p>
 
-      <h2 id="user-admin-unified-crud" data-toc="统一后的 CRUD">统一后的 CRUD 写法</h2>
-      <pre><code>@GetMapping("/user/list")
-public Result&lt;List&lt;User&gt;&gt; list() {
-    return Result.success("查询成功", userService.list());
-}
-
-@GetMapping("/user/list/{id}")
-public Result&lt;User&gt; getById(@PathVariable Long id) {
-    User user = userService.list(id);
-    return user == null
-            ? Result.error("用户不存在")
-            : Result.success("查询成功", user);
-}
-
-@PostMapping("/user")
-public Result&lt;Void&gt; add(@Valid @RequestBody User user) {
-    return userService.add(user) &gt; 0
-            ? Result.success("新增成功", null)
-            : Result.error("新增失败");
-}
-
-@PutMapping("/user")
-public Result&lt;Void&gt; update(@Valid @RequestBody User user) {
-    return userService.update(user) &gt; 0
-            ? Result.success("更新成功", null)
-            : Result.error("更新失败");
-}
-
-@DeleteMapping("/user/delete")
-public Result&lt;Void&gt; delete(@RequestBody User user) {
-    return userService.delete(user) &gt; 0
-            ? Result.success("删除成功", null)
-            : Result.error("用户不存在或删除失败");
-}</code></pre>
-      <p><code>rows &gt; 0</code> 表示至少一行受到影响，不代表新记录的 ID。用户是否存在、用户名能否重复等业务规则主要放在 Service；Controller 根据 Service 的结果组织 HTTP 响应，不要把所有业务判断都堆在 Controller 中。</p>
-
-      <h2 id="user-admin-stage-review" data-toc="阶段复盘">阶段复盘与测试清单</h2>
-      <ul>
-        <li>查询列表返回 <code>Result&lt;List&lt;User&gt;&gt;</code>。</li>
-        <li>按 ID 查询时，存在返回用户，不存在返回明确提示。</li>
-        <li>新增、修改和删除都返回统一结构。</li>
-        <li>空用户名、缺失年龄和年龄越界能触发参数校验。</li>
-        <li>参数校验失败返回 HTTP 400 和统一 JSON，不暴露异常堆栈。</li>
-        <li>成功与失败响应都包含 <code>code</code>、<code>message</code>、<code>data</code>。</li>
-      </ul>
+      <h2 id="result-crud" data-toc="统一 CRUD">CRUD 返回类型怎么选</h2>
       <table>
-        <thead><tr><th>踩坑</th><th>原因</th><th>修正</th></tr></thead>
+        <thead><tr><th>接口</th><th>推荐返回类型</th></tr></thead>
         <tbody>
-          <tr><td><code>suceess(...)</code></td><td>方法名拼写错误</td><td>统一为 <code>success(...)</code> 并同步调用处</td></tr>
-          <tr><td>使用未声明的 <code>user</code></td><td>查询和赋值步骤缺失</td><td>先调用 Service 得到对象，再判断 null</td></tr>
-          <tr><td><code>Result&lt;Void&gt;</code> 无法转为 <code>Result&lt;User&gt;</code></td><td>错误工厂方法返回类型写死</td><td>把 <code>error</code> 声明为泛型静态方法</td></tr>
-          <tr><td>异常处理方法直接返回 String</td><td>与声明的响应类型不一致</td><td>先包装 Result，再返回 ResponseEntity</td></tr>
-          <tr><td>校验注解不生效</td><td>缺少依赖或没有使用 <code>@Valid</code></td><td>检查 Validation 依赖和触发位置</td></tr>
-          <tr><td>把 Result 当成异常类</td><td>混淆响应模型与异常处理职责</td><td>Result 定义格式，异常处理器负责捕获异常</td></tr>
+          <tr><td>查询列表</td><td><code>Result&lt;List&lt;User&gt;&gt;</code></td></tr>
+          <tr><td>按 ID 查询</td><td><code>Result&lt;User&gt;</code></td></tr>
+          <tr><td>新增、修改、删除</td><td><code>Result&lt;Void&gt;</code></td></tr>
         </tbody>
       </table>
+      <p><code>rows &gt; 0</code> 表示至少影响一行，不是新记录 ID。用户是否存在、用户名是否重复等规则放在 Service；Controller 只根据业务结果组织响应。</p>
 
-      <h2 id="user-admin-pagination" data-toc="分页查询链路">分页查询：为什么需要、怎样分层</h2>
-      <p>数据量变大后，每次查询并返回全部用户会增加数据库扫描、网络传输和前端渲染的负担。分页接口每次只取一部分记录，同时返回符合条件的总数：</p>
-      <ul>
-        <li><code>total</code>：符合查询条件的总记录数。</li>
-        <li><code>records</code>：当前页实际查询出的用户列表。</li>
-      </ul>
+      <h2 id="result-review" data-toc="常见错误">常见错误速查</h2>
+      <table>
+        <thead><tr><th>问题</th><th>正确理解</th></tr></thead>
+        <tbody>
+          <tr><td><code>suceess</code> 拼写错误</td><td>统一为 <code>success</code> 并同步所有调用</td></tr>
+          <tr><td>Result 泛型无法转换</td><td>让 success / error 都成为泛型静态方法</td></tr>
+          <tr><td>校验注解不生效</td><td>检查 Validation 依赖和 <code>@Valid</code></td></tr>
+          <tr><td>异常处理方法返回 String</td><td>先包装 Result，再返回 ResponseEntity</td></tr>
+          <tr><td>把 Result 当异常类</td><td>Result 定义格式，异常处理器负责捕获异常</td></tr>
+        </tbody>
+      </table>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-user-admin-crud">上一篇：用户管理基础三层链路 →</button>
+        <button class="jump-link" type="button" data-id="springboot-mybatis-pagination">下一篇：MyBatis 分页查询 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "springboot-mybatis-pagination",
+    category: "Spring Boot 开发",
+    order: 50,
+    title: "MyBatis 分页查询：COUNT、LIMIT 与 PageResult",
+    summary: "从分页参数到两次 SQL 查询和嵌套统一响应",
+    related: [
+      "springboot-user-admin-crud",
+      "springboot-result-validation",
+      "java-spring-annotations",
+    ],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 项目实战</span>
+      <h1>MyBatis 分页查询：COUNT、LIMIT 与 PageResult</h1>
+      <p class="lead">分页不是只写一个 LIMIT：接口既要返回当前页 records，也要返回符合条件的总数 total，因此需要明确参数、偏移量、两次查询和响应结构。</p>
+
+      <h2 id="page-flow" data-toc="完整链路">分页的完整链路</h2>
       <pre class="flow">GET /user/list/page?pageNum=1&amp;pageSize=10
   ↓
-Controller：接收并校验分页参数
+Controller：接收并校验参数
   ↓
-Service：计算 offset、组织两次查询、组装 PageResult
+Service：计算 offset、组织查询
   ↓
-Mapper：执行 COUNT 和分页 SELECT
+Mapper：COUNT 总数 + SELECT 当前页
   ↓
-MySQL</pre>
-      <p>职责仍然保持一致：Controller 不写 SQL，Service 组织分页流程，Mapper 专注数据库查询。</p>
+PageResult&lt;User&gt;
+  ↓
+Result&lt;PageResult&lt;User&gt;&gt;</pre>
+      <p>分页能减少数据库返回、网络传输和前端渲染的数据量。Controller 不写 SQL，Service 组织流程，Mapper 负责查询。</p>
 
-      <h2 id="user-admin-page-params" data-toc="分页参数">@RequestParam 与分页参数</h2>
+      <h2 id="page-params" data-toc="请求参数">@RequestParam 与参数边界</h2>
       <pre><code>@RequestParam(defaultValue = "1") Integer pageNum,
 @RequestParam(defaultValue = "10") Integer pageSize</code></pre>
-      <p><code>@RequestParam</code> 获取 URL 问号后的查询参数。例如 <code>?pageNum=2&amp;pageSize=5</code> 会分别绑定到两个 Java 参数。<code>defaultValue</code> 的类型是字符串，所以默认值必须加引号；Spring 随后会把它转换成 <code>Integer</code>。</p>
-      <table>
-        <thead><tr><th>注解</th><th>参数来源</th><th>示例</th></tr></thead>
-        <tbody>
-          <tr><td><code>@PathVariable</code></td><td>URL 路径</td><td><code>/user/list/1</code></td></tr>
-          <tr><td><code>@RequestParam</code></td><td><code>?</code> 后的查询参数</td><td><code>/user/list/page?pageNum=1</code></td></tr>
-        </tbody>
-      </table>
-      <p>分页参数需要限制范围。当前规则是页码至少为 1，每页 1～100 条，防止无效页码或一次请求过多数据：</p>
+      <p><code>@RequestParam</code> 获取问号后的查询参数；<code>@PathVariable</code> 获取 URL 路径中的值。<code>defaultValue</code> 接受字符串，所以默认数字也要加引号。</p>
       <pre><code>if (pageNum &lt; 1 || pageSize &lt; 1 || pageSize &gt; 100) {
     return Result.error("页码必须大于0，每页条数必须在1到100之间");
 }</code></pre>
 
-      <h2 id="user-admin-page-mapper" data-toc="分页 SQL">Mapper：总数与当前页</h2>
-      <p>一个完整分页结果通常需要两次查询。第一次统计总记录数：</p>
+      <h2 id="page-sql" data-toc="分页 SQL">COUNT、LIMIT 与 offset</h2>
       <pre><code>@Select("SELECT COUNT(*) FROM user")
-Long count();</code></pre>
-      <p>第二次查询当前页数据：</p>
-      <pre><code>@Select("""
+Long count();
+
+@Select("""
         SELECT id, username, age
         FROM user
         ORDER BY id ASC
@@ -1651,97 +1525,58 @@ Long count();</code></pre>
 List&lt;User&gt; selectPage(
         @Param("offset") Integer offset,
         @Param("pageSize") Integer pageSize);</code></pre>
-      <ul>
-        <li><code>offset</code>：先跳过多少条记录。</li>
-        <li><code>pageSize</code>：本次最多取多少条记录。</li>
-        <li><code>@Param</code>：为 MyBatis 参数命名，让 SQL 中的 <code>#{offset}</code>、<code>#{pageSize}</code> 能找到对应值。</li>
-        <li><code>ORDER BY id</code>：提供稳定顺序，避免翻页时结果顺序不确定。</li>
-      </ul>
-      <p>页码从 1 开始，数据库偏移量从 0 开始，因此：</p>
+      <p><code>@Param</code> 给 MyBatis 方法参数命名，SQL 中的 <code>#{offset}</code> 才能找到对应值。页码从 1 开始，而数据库偏移量从 0 开始：</p>
       <pre><code>int offset = (pageNum - 1) * pageSize;</code></pre>
       <table>
-        <thead><tr><th>页码</th><th>每页条数</th><th>offset</th><th>含义</th></tr></thead>
+        <thead><tr><th>pageNum</th><th>pageSize</th><th>offset</th></tr></thead>
         <tbody>
-          <tr><td>1</td><td>10</td><td>0</td><td>跳过 0 条</td></tr>
-          <tr><td>2</td><td>10</td><td>10</td><td>跳过前 10 条</td></tr>
-          <tr><td>3</td><td>10</td><td>20</td><td>跳过前 20 条</td></tr>
-          <tr><td>2</td><td>5</td><td>5</td><td>跳过前 5 条</td></tr>
+          <tr><td>1</td><td>10</td><td>0</td></tr>
+          <tr><td>2</td><td>10</td><td>10</td></tr>
+          <tr><td>3</td><td>10</td><td>20</td></tr>
         </tbody>
       </table>
-      <p><code>COUNT(*)</code> 使用 <code>Long</code> 接收时，<code>PageResult.total</code> 和构造方法参数也要保持 <code>Long</code>。以后增加用户名等筛选条件时，COUNT 和分页 SELECT 必须使用相同条件，否则总数会与列表不匹配。</p>
+      <p><code>ORDER BY id</code> 提供稳定顺序；以后增加搜索条件时，COUNT 和 SELECT 必须使用相同筛选条件，否则 total 与 records 会不一致。</p>
 
-      <h2 id="user-admin-page-service" data-toc="分页结果封装">Service 与嵌套响应</h2>
+      <h2 id="page-service" data-toc="Service 封装">Service 与 PageResult</h2>
       <pre><code>public PageResult&lt;User&gt; page(Integer pageNum, Integer pageSize) {
     int offset = (pageNum - 1) * pageSize;
     Long total = userMapper.count();
     List&lt;User&gt; records = userMapper.selectPage(offset, pageSize);
     return new PageResult&lt;&gt;(pageNum, pageSize, total, records);
 }</code></pre>
-      <p><code>PageResult&lt;User&gt;</code> 专门描述分页数据，包含 <code>pageNum</code>、<code>pageSize</code>、<code>total</code> 和 <code>records</code>；<code>Result&lt;PageResult&lt;User&gt;&gt;</code> 再在外层统一包装业务码与提示：</p>
-      <pre class="flow">Result
-├── code
-├── message
-└── data: PageResult&lt;User&gt;
-    ├── pageNum
-    ├── pageSize
-    ├── total
-    └── records: List&lt;User&gt;</pre>
-      <p>这两个泛型层次职责不同，不能用 <code>Result&lt;Void&gt;</code> 代替 <code>Result&lt;PageResult&lt;User&gt;&gt;</code>。前面定义的泛型 <code>Result.error(String message)</code> 可以根据 Controller 的返回类型自动推断正确类型。</p>
+      <p><code>PageResult&lt;User&gt;</code> 保存 pageNum、pageSize、total 和 records；外层 <code>Result&lt;PageResult&lt;User&gt;&gt;</code> 再包装业务码和提示。COUNT 返回 Long 时，字段和构造方法也应保持 Long。</p>
 
-      <h2 id="user-admin-page-controller" data-toc="分页接口">Controller 与测试</h2>
+      <h2 id="page-controller" data-toc="Controller">Controller 接口</h2>
       <pre><code>@GetMapping("/user/list/page")
 public Result&lt;PageResult&lt;User&gt;&gt; page(
         @RequestParam(defaultValue = "1") Integer pageNum,
         @RequestParam(defaultValue = "10") Integer pageSize) {
 
     if (pageNum &lt; 1 || pageSize &lt; 1 || pageSize &gt; 100) {
-        return Result.error("页码必须大于0，每页条数必须在1到100之间");
+        return Result.error("分页参数错误");
     }
-
-    PageResult&lt;User&gt; pageResult = userService.page(pageNum, pageSize);
-    return Result.success("分页查询成功", pageResult);
+    return Result.success(
+            "分页查询成功",
+            userService.page(pageNum, pageSize));
 }</code></pre>
-      <p>分页是 GET 请求，不需要 Body。至少验证以下场景：</p>
-      <ul>
-        <li><code>/user/list/page?pageNum=1&amp;pageSize=10</code>：正常第一页。</li>
-        <li><code>/user/list/page?pageNum=1&amp;pageSize=2</code>：<code>records</code> 最多两条。</li>
-        <li><code>/user/list/page</code>：使用第 1 页、每页 10 条的默认值。</li>
-        <li><code>?pageNum=0&amp;pageSize=10</code>：返回页码错误。</li>
-        <li><code>?pageNum=1&amp;pageSize=101</code>：返回每页条数超限错误。</li>
-      </ul>
+      <p>分页 GET 请求不需要 Body。测试正常页、小 pageSize、默认参数、pageNum=0 和 pageSize=101，分别验证 records 数量与错误分支。</p>
 
-      <h2 id="user-admin-page-review" data-toc="分页复盘">分页常见错误与优化</h2>
+      <h2 id="page-pitfalls" data-toc="错误与优化">常见错误与后续优化</h2>
       <table>
-        <thead><tr><th>问题</th><th>原因</th><th>修正</th></tr></thead>
+        <thead><tr><th>问题</th><th>修正</th></tr></thead>
         <tbody>
-          <tr><td><code>defaultValue = 1</code></td><td>defaultValue 要求字符串</td><td>写成 <code>defaultValue = "1"</code></td></tr>
-          <tr><td>Long 不能转为 Integer</td><td>COUNT 返回类型与接收类型不一致</td><td>统一使用 <code>Long total</code></td></tr>
-          <tr><td>Result 泛型不匹配</td><td>错误方法固定返回 <code>Result&lt;Void&gt;</code></td><td>使用泛型 <code>Result.error(...)</code></td></tr>
-          <tr><td>调用不存在的 <code>error1</code></td><td>定义与调用名称不一致</td><td>统一调用 <code>Result.error(...)</code></td></tr>
-          <tr><td>校验条件和提示不一致</td><td>边界规则没有统一</td><td>条件与“1～100”提示保持一致</td></tr>
-          <tr><td>翻页数据顺序变化</td><td>SQL 没有明确排序</td><td>分页 SELECT 增加稳定的 <code>ORDER BY</code></td></tr>
+          <tr><td><code>defaultValue = 1</code></td><td>改成字符串 <code>"1"</code></td></tr>
+          <tr><td>Long 不能转 Integer</td><td>total 全链路统一使用 Long</td></tr>
+          <tr><td>Result 泛型不匹配</td><td>使用泛型 <code>Result.error(...)</code></td></tr>
+          <tr><td>翻页顺序变化</td><td>SELECT 增加稳定 ORDER BY</td></tr>
+          <tr><td>total 与 records 对不上</td><td>两条 SQL 使用相同筛选条件</td></tr>
         </tbody>
       </table>
-      <p><code>LIMIT offset, pageSize</code> 简单直观，适合当前学习项目；offset 很大时，数据库仍需跳过大量记录，性能可能下降。数据规模继续增长后，可以学习基于唯一、有序字段的游标分页。</p>
+      <p>传统 <code>LIMIT offset, pageSize</code> 在大 offset 下会变慢；数据规模继续增长后，可学习基于唯一、有序字段的游标分页。</p>
       <p class="jump-row">
-        <button class="jump-link" type="button" data-id="java-object-create-dto">相关基础：DTO 与参数映射 →</button>
-        <button class="jump-link" type="button" data-id="java-spring-annotations/ann-params">相关：@RequestBody 接收参数 →</button>
-        <button class="jump-link" type="button" data-id="java-spring-annotations/ann-valid">相关：参数校验 →</button>
+        <button class="jump-link" type="button" data-id="springboot-user-admin-crud">基础：用户管理三层链路 →</button>
+        <button class="jump-link" type="button" data-id="springboot-result-validation">前置：统一响应与参数校验 →</button>
       </p>
-
-      <h2 id="user-admin-interview" data-toc="面试表达">面试怎么表达</h2>
-      <h3>Spring Boot 请求流程</h3>
-      <blockquote>
-        <p>客户端请求先由内嵌 Web 服务器接收，再交给 Spring MVC 的 DispatcherServlet。DispatcherServlet 根据映射找到 Controller 方法；POST 请求中的 JSON 会先由消息转换器反序列化成 Java 对象，Controller 再调用 Service，Service 调用 Mapper 访问数据库。查询结果或操作结果最后由消息转换器写回 HTTP 响应。</p>
-      </blockquote>
-      <h3>三层架构</h3>
-      <blockquote>
-        <p>Controller 负责协议层的请求和响应，Service 负责业务规则与流程，Mapper 负责数据访问。分层可以降低职责耦合，让代码更容易维护和测试。</p>
-      </blockquote>
-      <h3>MyBatis</h3>
-      <blockquote>
-        <p>MyBatis 是持久层框架，通过 Mapper 和 SQL 映射帮助 Java 程序访问数据库，减少手写 JDBC 的连接管理、参数设置和结果集转换代码，同时保留对 SQL 的直接控制。</p>
-      </blockquote>
     `,
   },
   {
@@ -1967,6 +1802,7 @@ public class UserService {
       "java-spring-annotations",
       "db-isolation-locks",
       "case-concurrent-withdraw",
+      "api-idempotency-request-id",
     ],
     content: `
       <span class="article-tag">数据库与高并发</span>
@@ -2128,123 +1964,99 @@ Redis 库存 9→10</pre>
         </table>
       </section>
 
-      <section class="dig">
-        <div class="dig-head">
-          <span class="dig-label">深挖</span>
-          <p class="dig-ask"><strong>疑问方向：</strong>A 预扣成功、建单成功，但 ACK 丢了导致 MQ 再投递——如何防止 A 被建两个订单？（引出幂等性）</p>
-        </div>
-        <h2>幂等性 Idempotency</h2>
-        <p><strong>幂等</strong>：同一操作执行一次和多次，最终业务效果相同。例如订单 1001 无论重试几次，最终只有一单。</p>
-        <pre class="flow">消费者建单成功
- ↓
-准备 ACK，网络异常未送达
- ↓
-MQ 认为未确认 → 再投递
- ↓
-若无幂等 → 可能重复建单</pre>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="api-idempotency-request-id">深入：接口幂等性、requestId 与唯一约束 →</button>
+        <button class="jump-link" type="button" data-id="db-isolation-locks">相关：事务隔离与并发锁 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "api-idempotency-request-id",
+    category: "数据库与高并发",
+    order: 40,
+    title: "接口幂等性：requestId、唯一约束与事务边界",
+    summary: "让重复请求和重复消息不产生额外业务效果",
+    related: [
+      "seckill-redis-mq",
+      "db-isolation-locks",
+      "case-concurrent-withdraw",
+    ],
+    content: `
+      <span class="article-tag">数据库与高并发</span>
+      <h1>接口幂等性：requestId、唯一约束与事务边界</h1>
+      <p class="lead">幂等指同一业务操作执行一次或多次，最终业务效果相同。它解决超时重试、MQ 重复投递等场景中的重复建单、重复扣款问题。</p>
 
-        <h3>常见做法：唯一订单号 + 唯一约束</h3>
-        <pre><code>{
-  "orderId": 1001,
-  "userId": 2001,
-  "productId": 3001
-}</code></pre>
-        <pre><code>ALTER TABLE orders
-ADD CONSTRAINT uk_order_id UNIQUE (order_id);</code></pre>
-        <p>第二次插入同 <code>orderId</code> 会 Duplicate；消费者识别为已成功处理的重复消息后直接 ACK。若业务是「一用户一场秒杀只能一次」，还要按业务规则做用户+活动唯一约束。</p>
+      <h2 id="idempotency-why" data-toc="为什么需要幂等">重复执行从哪里来</h2>
+      <pre class="flow">消费者建单成功
+  ↓
+ACK 因网络异常未送达
+  ↓
+MQ 认为消息未确认，再次投递
+  ↓
+没有幂等保护 → 可能重复建单</pre>
+      <p>HTTP 接口也一样：客户端提交后超时，不知道服务端是否成功，于是自动重试。服务端不能把每次到达都当成新业务。</p>
 
-        <h3>为什么不能只靠事务？</h3>
-        <pre class="flow">第一次消息 → 事务插入 → 提交成功
-第二次消息 → 新事务再插入 → 也可能提交成功</pre>
-        <ul>
-          <li><code>@Transactional</code>：一次事务内部一致性</li>
-          <li>唯一约束：防重复数据</li>
-          <li>幂等性：重复执行不产生额外业务效果</li>
-        </ul>
-        <p>还要区分异常：库临时故障可重试；已确认成功的重复消息应直接 ACK，不能把所有异常都当成功。</p>
-        <blockquote>
-          <p>幂等指同一业务操作重复执行不产生额外影响。MQ 可能重复投递，消费者要用唯一业务标识、唯一索引或 Redis 去重等保证不重复建单。事务管单次一致性，不能单独保证幂等。</p>
-        </blockquote>
-      </section>
-
-      <section class="dig">
-        <div class="dig-head">
-          <span class="dig-label">深挖</span>
-          <p class="dig-ask"><strong>疑问方向：</strong>转账接口超时重试时，如何判断是「同一笔重试」还是「用户真想再转一次」？</p>
-        </div>
-        <h2>转账场景的幂等：requestId</h2>
-        <p>不能靠参数碰巧相同就当重复。应给每笔业务分配唯一 <code>requestId</code>：重试复用同一 ID，新业务用新 ID。</p>
-        <pre><code>// 同一笔重试
+      <h2 id="idempotency-key" data-toc="业务唯一标识">requestId 区分重试与新业务</h2>
+      <p>不能因为请求参数恰好相同就判断重复。每笔业务应有唯一 <code>requestId</code>：同一笔重试复用原 ID，用户真正发起的新业务使用新 ID。</p>
+      <pre><code>// 同一笔转账的重试
 { "requestId": "TX10001", "fromUser": 1001, "toUser": 1002, "amount": 100 }
 
-// 用户真想再转一笔
+// 用户再次发起一笔新转账
 { "requestId": "TX10002", "fromUser": 1001, "toUser": 1002, "amount": 100 }</code></pre>
-        <pre><code>CREATE TABLE transfer_record (
+      <p>唯一标识应由客户端或服务端在业务开始时生成，并在重试链路中保持不变。</p>
+
+      <h2 id="idempotency-unique" data-toc="数据库唯一约束">唯一约束兜底</h2>
+      <pre><code>CREATE TABLE transfer_record (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     request_id VARCHAR(64) NOT NULL UNIQUE,
-    amount DECIMAL(10,2)
+    amount DECIMAL(10,2) NOT NULL
 );</code></pre>
-        <table>
-          <thead>
-            <tr><th>方案</th><th>主要作用</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Redis SET NX</td><td>快速识别 / 拦截重复请求</td></tr>
-            <tr><td>MySQL UNIQUE</td><td>库层面防重复业务记录</td></tr>
-            <tr><td>@Transactional</td><td>一次库事务内部一致性</td></tr>
-          </tbody>
-        </table>
-        <p>转账等重要业务不能只靠 Redis（可能过期/丢失），要配合库唯一约束，并在同一事务里完成记录、扣款、入账。</p>
-        <blockquote>
-          <p>为每次业务分配唯一请求 ID；重试复用、新业务新 ID。可用 Redis 快速去重，并用数据库唯一约束保证不重复执行，再结合事务保证资金一致性。</p>
-        </blockquote>
-      </section>
+      <p>第一次插入成功后，第二次使用相同 requestId 会触发唯一约束。消费者确认它是已成功处理的重复消息后可以直接 ACK。秒杀还可以根据业务规则增加“用户 + 活动”的联合唯一约束。</p>
+      <table>
+        <thead><tr><th>手段</th><th>主要作用</th></tr></thead>
+        <tbody>
+          <tr><td>Redis <code>SET NX</code></td><td>快速拦截重复请求，但不能作为重要业务的唯一保障</td></tr>
+          <tr><td>MySQL <code>UNIQUE</code></td><td>从数据库层防止重复业务记录</td></tr>
+          <tr><td><code>@Transactional</code></td><td>保证一次数据库事务内部同成同败</td></tr>
+        </tbody>
+      </table>
 
-      <section class="dig">
-        <div class="dig-head">
-          <span class="dig-label">深挖</span>
-          <p class="dig-ask"><strong>疑问方向：</strong>A 扣款成功、B 入账失败时余额应是多少？如何保证两步同成同败？ACID 是什么？</p>
-        </div>
-        <h2>事务与 ACID</h2>
-        <p>在<strong>同一事务</strong>里：A 扣成功、B 加失败 → 回滚 → A 仍是 100，B 仍是 50。若没开事务且 A 已提交，A 可能变成 0。</p>
-        <p>易混点：「一个失败就回滚」体现的主要是<strong>原子性 Atomicity</strong>，不只是口头上的「一致性」。</p>
-        <table>
-          <thead>
-            <tr><th>特性</th><th>英文</th><th>底层理解</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>A 原子性</td><td>Atomicity</td><td>一组操作全部成功或全部回滚</td></tr>
-            <tr><td>C 一致性</td><td>Consistency</td><td>事务前后满足业务规则与约束</td></tr>
-            <tr><td>I 隔离性</td><td>Isolation</td><td>并发事务控制相互影响</td></tr>
-            <tr><td>D 持久性</td><td>Durability</td><td>提交后数据能持久保存</td></tr>
-          </tbody>
-        </table>
-        <pre><code>@Transactional
-public void transfer() {
-    accountMapper.deduct(1001L, 100);
-    accountMapper.add(1002L, 100);
-}</code></pre>
-        <pre class="flow">Spring 事务代理
- ↓
-开启库事务
- ↓
-扣款 / 入账
- ↓
-全成功 → COMMIT
-需回滚的异常 → ROLLBACK</pre>
-        <ul>
-          <li>默认主要对 <code>RuntimeException</code> / <code>Error</code> 回滚，不是所有异常</li>
-          <li><code>catch</code> 住却不抛出 / 不标记回滚，可能被当成成功提交</li>
-          <li>本地事务不自动回滚 Redis、MQ 等外部操作</li>
-        </ul>
-        <blockquote>
-          <p>ACID：原子性、一致性、隔离性、持久性。Spring Boot 常用 <code>@Transactional</code> 管理数据库事务。</p>
-        </blockquote>
-        <p class="jump-row">
-          <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离与并发锁 →</button>
-          <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景解析：并发扣款 →</button>
-        </p>
-      </section>
+      <h2 id="idempotency-transaction" data-toc="事务不能替代幂等">为什么事务不能替代幂等</h2>
+      <pre class="flow">第一次消息 → 事务插入 → 提交成功
+第二次消息 → 开启新的事务 → 仍可能再次提交</pre>
+      <p>事务保证的是一次执行内部的一致性；幂等保证同一业务被重复执行时不会产生额外结果。两者必须配合，而不是二选一。</p>
+      <p>转账中的扣款和入账应放在同一数据库事务中：A 扣款成功、B 入账失败时整体回滚。默认情况下 Spring 主要对 <code>RuntimeException</code> 和 <code>Error</code> 回滚；异常被 catch 后不再抛出，可能导致事务照常提交。</p>
+
+      <h2 id="idempotency-acid" data-toc="ACID 边界">ACID 与跨系统边界</h2>
+      <table>
+        <thead><tr><th>特性</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td>原子性 Atomicity</td><td>一组操作全部成功或全部回滚</td></tr>
+          <tr><td>一致性 Consistency</td><td>事务前后满足业务规则和约束</td></tr>
+          <tr><td>隔离性 Isolation</td><td>控制并发事务之间的影响</td></tr>
+          <tr><td>持久性 Durability</td><td>提交后的数据能够持久保存</td></tr>
+        </tbody>
+      </table>
+      <blockquote>
+        <p>MySQL 本地事务不会自动回滚 Redis 和 MQ。跨系统失败需要可靠消息、重试、幂等补偿和对账来实现最终一致性。</p>
+      </blockquote>
+
+      <h2 id="idempotency-flow" data-toc="推荐处理流程">推荐处理流程</h2>
+      <pre class="flow">接收 requestId
+  ↓
+快速去重（可选 Redis）
+  ↓
+数据库事务：写业务记录 + 执行业务更新
+  ↓
+数据库唯一约束最终兜底
+  ↓
+重复请求返回第一次的结果或明确的已处理状态</pre>
+      <p>异常要分类：临时数据库故障可以重试；已确认成功的重复请求应返回已有结果；真正的业务冲突则返回明确错误，不能把所有异常都伪装成成功。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="seckill-redis-mq">场景：秒杀系统 →</button>
+        <button class="jump-link" type="button" data-id="db-isolation-locks">基础：事务隔离与并发锁 →</button>
+        <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景：并发扣款 →</button>
+      </p>
     `,
   },
   {
