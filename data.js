@@ -12,7 +12,7 @@ window.KNOWLEDGE = [
   {
     id: "interceptor-threadlocal",
     category: "Spring Boot 开发",
-    order: 70,
+    order: 80,
     title: "请求拦截与用户上下文",
     summary: "用 Interceptor 和 ThreadLocal 管理当前登录用户",
     related: ["sso-single-sign-on"],
@@ -1592,6 +1592,7 @@ public Result&lt;PageResult&lt;User&gt;&gt; page(
       "springboot-mybatis-pagination",
       "springboot-result-validation",
       "springboot-user-admin-crud",
+      "springboot-multi-condition-query",
       "java-spring-annotations",
     ],
     content: `
@@ -1721,6 +1722,146 @@ public Result&lt;PageResult&lt;User&gt;&gt; page(
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-mybatis-pagination">上一篇：基础分页查询 →</button>
         <button class="jump-link" type="button" data-id="springboot-result-validation">相关：统一响应与参数校验 →</button>
+        <button class="jump-link" type="button" data-id="springboot-multi-condition-query">下一篇：多条件动态查询 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "springboot-multi-condition-query",
+    category: "Spring Boot 开发",
+    order: 70,
+    title: "MyBatis 多条件动态查询：年龄区间与 SQL 排错",
+    summary: "组合 username、minAge、maxAge，并从 500 异常定位转义错误",
+    related: [
+      "springboot-dynamic-sql-search",
+      "springboot-mybatis-pagination",
+      "springboot-result-validation",
+      "interview-mysql-transaction",
+    ],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 项目实战</span>
+      <h1>MyBatis 多条件动态查询：年龄区间与 SQL 排错</h1>
+      <p class="lead">在 username 模糊查询基础上增加可选的 minAge 和 maxAge，让一个分页接口支持任意条件组合，并通过一次真实 HTTP 500 学会从异常中的实际 SQL 定位问题。</p>
+
+      <h2 id="multi-query-goal" data-toc="条件组合">多个可选条件怎样组合</h2>
+      <pre><code>GET /user/list/page?pageNum=1&amp;pageSize=10
+GET /user/list/page?pageNum=1&amp;pageSize=10&amp;minAge=18
+GET /user/list/page?pageNum=1&amp;pageSize=10&amp;username=Zhang&amp;minAge=18&amp;maxAge=30</code></pre>
+      <p>只拼接客户端实际提供的条件；提供多个条件时用 AND 连接，用户必须同时满足它们：</p>
+      <pre><code>WHERE username LIKE '%Zhang%'
+  AND age &gt;= 18
+  AND age &lt;= 30
+ORDER BY id ASC
+LIMIT 0, 10</code></pre>
+      <table>
+        <thead><tr><th>参数</th><th>条件</th></tr></thead>
+        <tbody>
+          <tr><td>username</td><td>用户名包含关键词</td></tr>
+          <tr><td>minAge</td><td>年龄大于等于下限</td></tr>
+          <tr><td>maxAge</td><td>年龄小于等于上限</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="multi-query-null" data-toc="可选参数类型">为什么年龄使用 Integer</h2>
+      <p><code>Integer</code> 可以是 null，表示请求没有提供该条件；基本类型 <code>int</code> 不能表达“未传”。动态 SQL 据此决定是否拼接年龄条件：</p>
+      <pre><code>&lt;where&gt;
+    &lt;if test='minAge != null'&gt;
+        AND age &amp;gt;= #{minAge}
+    &lt;/if&gt;
+    &lt;if test='maxAge != null'&gt;
+        AND age &amp;lt;= #{maxAge}
+    &lt;/if&gt;
+&lt;/where&gt;</code></pre>
+      <p><code>&lt;where&gt;</code> 会在存在条件时添加 WHERE，并移除开头多余的 AND / OR，因此多个可选条件可以使用一致写法。</p>
+
+      <h2 id="multi-query-mapper" data-toc="Mapper 动态 SQL">COUNT 和 SELECT 同步改造</h2>
+      <pre><code>@Select("""
+        &lt;script&gt;
+        SELECT COUNT(*) FROM user
+        &lt;where&gt;
+            &lt;if test='username != null and username != ""'&gt;
+                AND username LIKE CONCAT('%', #{username}, '%')
+            &lt;/if&gt;
+            &lt;if test='minAge != null'&gt;
+                AND age &amp;gt;= #{minAge}
+            &lt;/if&gt;
+            &lt;if test='maxAge != null'&gt;
+                AND age &amp;lt;= #{maxAge}
+            &lt;/if&gt;
+        &lt;/where&gt;
+        &lt;/script&gt;
+        """)
+Long count(
+        @Param("username") String username,
+        @Param("minAge") Integer minAge,
+        @Param("maxAge") Integer maxAge);</code></pre>
+      <p><code>selectPage</code> 使用完全相同的 where 条件，再追加稳定排序和分页：</p>
+      <pre><code>ORDER BY id ASC
+LIMIT #{offset}, #{pageSize}</code></pre>
+      <p>如果只改列表、不改 count，total 就会统计错误；如果动态改造时遗漏 LIMIT，则只是条件查询，不再是真正分页。</p>
+
+      <h2 id="multi-query-layers" data-toc="三层参数传递">Controller、Service、Mapper 一起更新</h2>
+      <pre><code>public PageResult&lt;User&gt; page(
+        Integer pageNum,
+        Integer pageSize,
+        String username,
+        Integer minAge,
+        Integer maxAge) {
+
+    int offset = (pageNum - 1) * pageSize;
+    Long total = userMapper.count(username, minAge, maxAge);
+    List&lt;User&gt; records = userMapper.selectPage(
+            offset, pageSize, username, minAge, maxAge);
+    return new PageResult&lt;&gt;(pageNum, pageSize, total, records);
+}</code></pre>
+      <pre><code>@RequestParam(required = false) String username,
+@RequestParam(required = false) Integer minAge,
+@RequestParam(required = false) Integer maxAge</code></pre>
+      <p>方法签名增加参数后，所有调用处都要同步参数个数、顺序和类型。Controller 还应校验年龄非负，以及同时提供上下限时 <code>minAge &lt;= maxAge</code>。</p>
+
+      <h2 id="multi-query-escape" data-toc="500 与 XML 转义">从 HTTP 500 定位 XML 转义错误</h2>
+      <p>一次请求返回 500，异常包含 <code>BadSqlGrammarException</code> 和 <code>SQLSyntaxErrorException</code>。实际 SQL 中出现：</p>
+      <pre><code>AND age %lt;= ?</code></pre>
+      <p>根因是把 XML 小于号转义写成了 <code>%lt;</code>。正确写法是：</p>
+      <pre><code>AND age &amp;lt;= #{maxAge}
+AND age &amp;gt;= #{minAge}</code></pre>
+      <ul>
+        <li><code>&amp;lt;</code> 由 MyBatis XML 解析后变成 <code>&lt;</code>。</li>
+        <li><code>&amp;gt;</code> 由 MyBatis XML 解析后变成 <code>&gt;</code>。</li>
+        <li>Java 文本块只提供多行字符串，不会自动修正 XML 转义。</li>
+      </ul>
+      <pre class="flow">确认 HTTP 500
+  ↓
+查看异常类型
+  ↓
+找到日志中的实际 SQL
+  ↓
+定位 %lt;= 非法片段
+  ↓
+修正为 &amp;lt;=，重新加载并复测</pre>
+
+      <h2 id="multi-query-tests" data-toc="测试矩阵">测试组合与排错分层</h2>
+      <ul>
+        <li>不传条件：分页查询全部用户。</li>
+        <li>分别只传 username、minAge、maxAge。</li>
+        <li>只传年龄上下限，验证闭区间边界。</li>
+        <li>三个条件都传，records 必须同时满足全部条件。</li>
+        <li>没有匹配结果：<code>total = 0</code>、<code>records = []</code>，不是 500。</li>
+        <li>minAge 大于 maxAge：参数校验应拒绝。</li>
+      </ul>
+      <table>
+        <thead><tr><th>现象</th><th>优先检查</th></tr></thead>
+        <tbody>
+          <tr><td>IDEA 红线、无法构建</td><td>Java 方法名、参数数量和类型</td></tr>
+          <tr><td>HTTP 500 + SQL 语法异常</td><td>Mapper 动态 SQL 和日志中的实际 SQL</td></tr>
+          <tr><td>Postman ENOTFOUND</td><td>URL 的协议、主机和端口</td></tr>
+        </tbody>
+      </table>
+      <p>下一步可以把多个查询参数封装成 Query DTO，避免方法参数继续增长；数据量扩大后还要评估包含匹配和 offset 分页的性能。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-dynamic-sql-search">上一篇：用户名动态查询 →</button>
+        <button class="jump-link" type="button" data-id="springboot-mybatis-pagination">基础：MyBatis 分页 →</button>
+        <button class="jump-link" type="button" data-id="interview-mysql-transaction">面试：MySQL 与 SQL 排查 →</button>
       </p>
     `,
   },
@@ -2536,6 +2677,7 @@ where id=1 and version=1;</code></pre>
       "case-concurrent-withdraw",
       "springboot-mybatis-pagination",
       "springboot-dynamic-sql-search",
+      "springboot-multi-condition-query",
       "api-idempotency-request-id",
     ],
     content: `
@@ -2578,10 +2720,18 @@ EXPLAIN 检查访问类型、索引和扫描行数
   ↓
 修改后用相同数据与条件重新测量</pre>
       <p>不要一上来就“加索引”。分页 SQL 还要关注大 offset：数据库可能扫描并丢弃大量前置记录；可根据业务改用基于唯一有序字段的游标分页。</p>
+
+      <h2 id="interview-dynamic-query" data-toc="动态条件查询">项目中怎样实现多条件动态查询？</h2>
+      <p><strong>回答思路：</strong>参数接收 → 动态 SQL → count/list 一致 → 真实排错。</p>
+      <blockquote>
+        <p>我在用户分页接口中增加了可选的 username、minAge 和 maxAge。Controller 用可选 RequestParam 接收，Service 计算 offset 并传递条件，Mapper 使用 script、where 和多个 if 动态拼接 LIKE 与年龄区间。count 和 selectPage 复用同一组筛选条件，保证 total 准确。调试时曾把 XML 的小于号转义写成 %lt;=，我根据 HTTP 500 中的 BadSqlGrammarException 和实际 SQL 定位并改为 &amp;lt;=，之后用单条件、组合条件和空结果重新验证。</p>
+      </blockquote>
+      <p><strong>追问边界：</strong>参数继续增加时应使用 Query DTO；包含匹配和大 offset 在大数据量下需要进一步优化。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="db-isolation-locks">深入：事务隔离与并发锁 →</button>
         <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景：并发扣款 →</button>
         <button class="jump-link" type="button" data-id="springboot-dynamic-sql-search">项目：动态条件分页 →</button>
+        <button class="jump-link" type="button" data-id="springboot-multi-condition-query">项目：多条件查询与 SQL 排错 →</button>
       </p>
     `,
   },
