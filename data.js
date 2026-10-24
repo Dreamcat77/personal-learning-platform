@@ -1,6 +1,6 @@
 window.KNOWLEDGE_CATEGORIES = [
   "学习路线与工具",
-  "Java 与数据交互",
+  "Java 基础与数据交互",
   "Spring Boot 开发",
   "认证与安全",
   "数据库与高并发",
@@ -12,7 +12,7 @@ window.KNOWLEDGE = [
   {
     id: "interceptor-threadlocal",
     category: "Spring Boot 开发",
-    order: 80,
+    order: 90,
     title: "请求拦截与用户上下文",
     summary: "用 Interceptor 和 ThreadLocal 管理当前登录用户",
     related: ["sso-single-sign-on"],
@@ -325,14 +325,160 @@ SSO：
     `,
   },
   {
+    id: "java-boolean-logic",
+    category: "Java 基础与数据交互",
+    order: 10,
+    title: "Java 逻辑运算符：&&、||、! 与短路机制",
+    summary: "理解布尔条件、真值表、短路求值和组合校验",
+    related: [
+      "springboot-multi-condition-query",
+      "springboot-result-validation",
+      "springboot-business-exception",
+      "interview-java-core",
+    ],
+    content: `
+      <span class="article-tag">Java 基础与数据交互</span>
+      <h1>Java 逻辑运算符：&amp;&amp;、||、! 与短路机制</h1>
+      <p class="lead">逻辑运算符用来组合多个 true / false 条件。最常用的记忆是：<strong>&amp;&amp; 要求全部成立，|| 只要一个成立，! 把结果取反</strong>。</p>
+
+      <h2 id="boolean-basics" data-toc="布尔表达式">什么是布尔表达式</h2>
+      <p>比较表达式的结果只有 <code>true</code> 或 <code>false</code>：</p>
+      <pre><code>age &gt;= 18
+pageSize &lt;= 100
+username != null</code></pre>
+      <p>逻辑运算符可以把多个比较结果组合起来：</p>
+      <table>
+        <thead><tr><th>符号</th><th>含义</th><th>成立条件</th></tr></thead>
+        <tbody>
+          <tr><td><code>&amp;&amp;</code></td><td>逻辑与</td><td>所有条件都为 true</td></tr>
+          <tr><td><code>||</code></td><td>逻辑或</td><td>至少一个条件为 true</td></tr>
+          <tr><td><code>!</code></td><td>逻辑非</td><td>把 true / false 反转</td></tr>
+          <tr><td><code>^</code></td><td>逻辑异或</td><td>两个条件结果不同时为 true</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="boolean-or" data-toc="逻辑或 ||">||：一个为 true 就成立</h2>
+      <table>
+        <thead><tr><th>A</th><th>B</th><th>A || B</th></tr></thead>
+        <tbody>
+          <tr><td>false</td><td>false</td><td>false</td></tr>
+          <tr><td>false</td><td>true</td><td>true</td></tr>
+          <tr><td>true</td><td>false</td><td>true</td></tr>
+          <tr><td>true</td><td>true</td><td>true</td></tr>
+        </tbody>
+      </table>
+      <pre><code>if (pageNum &lt; 1 || pageSize &lt; 1 || pageSize &gt; 100) {
+    return Result.error("分页参数错误");
+}</code></pre>
+      <p>三个条件分别代表三种错误。只要出现任意一种，整个表达式就是 true，进入错误分支。</p>
+
+      <h2 id="boolean-and" data-toc="逻辑与 &&">&amp;&amp;：所有条件都成立才成立</h2>
+      <table>
+        <thead><tr><th>A</th><th>B</th><th>A &amp;&amp; B</th></tr></thead>
+        <tbody>
+          <tr><td>false</td><td>false</td><td>false</td></tr>
+          <tr><td>false</td><td>true</td><td>false</td></tr>
+          <tr><td>true</td><td>false</td><td>false</td></tr>
+          <tr><td>true</td><td>true</td><td>true</td></tr>
+        </tbody>
+      </table>
+      <pre><code>if (age &gt;= 18 &amp;&amp; age &lt;= 60) {
+    System.out.println("年龄在 18～60 之间");
+}</code></pre>
+      <p>age 必须同时满足下限和上限。范围“以内”通常使用 &amp;&amp;；判断“落在范围外的任意一边”通常使用 ||。</p>
+
+      <h2 id="boolean-not-xor" data-toc="取反与异或">! 取反与 ^ 异或</h2>
+      <pre><code>boolean loggedIn = false;
+if (!loggedIn) {
+    System.out.println("请先登录");
+}</code></pre>
+      <p><code>!</code> 把 false 变成 true、true 变成 false。<code>^</code> 表示两边不同才为 true：</p>
+      <table>
+        <thead><tr><th>A</th><th>B</th><th>A ^ B</th></tr></thead>
+        <tbody>
+          <tr><td>false</td><td>false</td><td>false</td></tr>
+          <tr><td>false</td><td>true</td><td>true</td></tr>
+          <tr><td>true</td><td>false</td><td>true</td></tr>
+          <tr><td>true</td><td>true</td><td>false</td></tr>
+        </tbody>
+      </table>
+      <p>异或可以表达“二选一”，但业务判断中远没有 &amp;&amp; 和 || 常见。</p>
+
+      <h2 id="boolean-short-circuit" data-toc="短路机制">为什么 && 和 || 会短路</h2>
+      <p>Java 从左向右计算条件；一旦结果已经确定，就不会继续执行右侧：</p>
+      <ul>
+        <li><code>true || 右侧</code>：整体一定为 true，右侧不执行。</li>
+        <li><code>false &amp;&amp; 右侧</code>：整体一定为 false，右侧不执行。</li>
+      </ul>
+      <pre><code>if (user == null || user.getAge() &lt; 18) {
+    // user 为 null 时，不会执行 user.getAge()
+}
+
+if (user != null &amp;&amp; user.getAge() &gt;= 18) {
+    // 只有 user 非 null，才会读取年龄
+}</code></pre>
+      <p>条件顺序很重要：先进行便宜、安全的判断，再执行依赖它的表达式。短路机制经常用来避免 <code>NullPointerException</code>。</p>
+
+      <h2 id="boolean-single-operators" data-toc="单个 & 和 |">&amp;/| 与 &amp;&amp;/|| 的区别</h2>
+      <table>
+        <thead><tr><th>运算符</th><th>boolean 结果</th><th>是否短路</th></tr></thead>
+        <tbody>
+          <tr><td><code>&amp;&amp;</code></td><td>逻辑与</td><td>是</td></tr>
+          <tr><td><code>&amp;</code></td><td>逻辑与</td><td>否，两边都执行</td></tr>
+          <tr><td><code>||</code></td><td>逻辑或</td><td>是</td></tr>
+          <tr><td><code>|</code></td><td>逻辑或</td><td>否，两边都执行</td></tr>
+        </tbody>
+      </table>
+      <p>日常条件判断优先使用 <code>&amp;&amp;</code> 和 <code>||</code>。单个 <code>&amp;</code>、<code>|</code> 还可以进行整数位运算，那是另一类用途。</p>
+
+      <h2 id="boolean-project-validation" data-toc="项目校验拆解">拆解年龄范围校验</h2>
+      <pre><code>if ((minAge != null &amp;&amp; minAge &lt; 0)
+        || (maxAge != null &amp;&amp; maxAge &lt; 0)
+        || (minAge != null
+            &amp;&amp; maxAge != null
+            &amp;&amp; minAge &gt; maxAge)) {
+    return Result.error("年龄范围不合法");
+}</code></pre>
+      <p>从内向外阅读：</p>
+      <ol>
+        <li>传了 minAge，并且它小于 0。</li>
+        <li>或者传了 maxAge，并且它小于 0。</li>
+        <li>或者两个值都传了，并且最小年龄反而大于最大年龄。</li>
+      </ol>
+      <p>任意一种错误成立，外层 || 就为 true。每组先判断非 null，再比较数值，利用 &amp;&amp; 短路避免空指针。</p>
+
+      <h2 id="boolean-precedence" data-toc="优先级与错误">优先级和常见错误</h2>
+      <ul>
+        <li><code>!</code> 的优先级高于 <code>&amp;&amp;</code>，<code>&amp;&amp;</code> 高于 <code>||</code>；复杂表达式仍应加括号表达意图。</li>
+        <li>不要把“范围以内”写成 <code>age &gt;= 18 || age &lt;= 60</code>，这个条件对绝大多数数字都为 true。</li>
+        <li>可空对象先判 null，再调用方法或参与数值比较。</li>
+        <li>把长条件拆成有意义的局部变量，通常比继续增加括号更容易维护。</li>
+      </ul>
+      <pre><code>boolean invalidMin = minAge != null &amp;&amp; minAge &lt; 0;
+boolean invalidMax = maxAge != null &amp;&amp; maxAge &lt; 0;
+boolean reversedRange = minAge != null
+        &amp;&amp; maxAge != null
+        &amp;&amp; minAge &gt; maxAge;
+
+if (invalidMin || invalidMax || reversedRange) {
+    return Result.error("年龄范围不合法");
+}</code></pre>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-multi-condition-query">项目：多条件查询与年龄校验 →</button>
+        <button class="jump-link" type="button" data-id="springboot-business-exception">项目：业务异常与 ID 校验 →</button>
+        <button class="jump-link" type="button" data-id="interview-java-core">面试：Java 核心问题 →</button>
+      </p>
+    `,
+  },
+  {
     id: "java-object-json-serialize",
-    category: "Java 与数据交互",
-    order: 20,
+    category: "Java 基础与数据交互",
+    order: 30,
     title: "Java 对象、JSON 与序列化",
     summary: "理解对象与 JSON 的双向转换及请求链路",
     related: ["java-object-create-dto"],
     content: `
-      <span class="article-tag">Java 与数据交互</span>
+      <span class="article-tag">Java 基础与数据交互</span>
       <h1>Java 对象、JSON 与序列化</h1>
       <p class="lead">这几个概念要连着理解，尤其在 Java 后端里，和 JSON 关系非常大。</p>
 
@@ -521,13 +667,13 @@ JSON → Java对象
   },
   {
     id: "java-object-create-dto",
-    category: "Java 与数据交互",
-    order: 10,
+    category: "Java 基础与数据交互",
+    order: 20,
     title: "对象创建、DTO 与参数映射",
     summary: "从 new 对象到按 JSON 建模和 Controller 接参",
     related: ["java-object-json-serialize"],
     content: `
-      <span class="article-tag">Java 与数据交互</span>
+      <span class="article-tag">Java 基础与数据交互</span>
       <h1>对象创建、DTO 与参数映射</h1>
       <p class="lead">对象的创建，核心就是这句：</p>
       <pre><code>User user = new User();</code></pre>
@@ -1351,6 +1497,7 @@ public String add(@RequestBody User user) {
     summary: "用 Result<T>、Bean Validation 和全局异常处理规范 CRUD 接口",
     related: [
       "springboot-user-admin-crud",
+      "springboot-business-exception",
       "springboot-mybatis-pagination",
       "java-object-create-dto",
       "java-spring-annotations",
@@ -1471,14 +1618,150 @@ HTTP 400 + Result.error(message)</pre>
       </table>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-user-admin-crud">上一篇：用户管理基础三层链路 →</button>
-        <button class="jump-link" type="button" data-id="springboot-mybatis-pagination">下一篇：MyBatis 分页查询 →</button>
+        <button class="jump-link" type="button" data-id="springboot-business-exception">下一篇：业务异常与 ID 校验 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "springboot-business-exception",
+    category: "Spring Boot 开发",
+    order: 50,
+    title: "Spring Boot 业务异常与 ID 参数校验",
+    summary: "用 BusinessException、HTTP 状态码和受影响行数表达业务失败",
+    related: [
+      "springboot-result-validation",
+      "springboot-post-create-user",
+      "java-boolean-logic",
+      "interview-spring-boot",
+      "interview-http-linux",
+    ],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 项目实战</span>
+      <h1>Spring Boot 业务异常与 ID 参数校验</h1>
+      <p class="lead">参数校验解决“请求格式是否正确”，业务异常表达“请求格式正确，但业务无法完成”。用户不存在、ID 非法和用户名冲突应该返回明确状态，而不是成功响应加 null。</p>
+
+      <h2 id="business-error-types" data-toc="错误分类">参数、业务、SQL 和代码错误</h2>
+      <table>
+        <thead><tr><th>类型</th><th>示例</th><th>处理方式</th></tr></thead>
+        <tbody>
+          <tr><td>参数错误</td><td>ID 缺失、ID ≤ 0</td><td>HTTP 400，参数校验或业务校验</td></tr>
+          <tr><td>业务异常</td><td>用户不存在、用户名冲突</td><td>Service 主动抛出，返回 404 或 409</td></tr>
+          <tr><td>SQL 错误</td><td>动态 SQL 拼写或转义错误</td><td>修正 Mapper，不伪装成业务异常</td></tr>
+          <tr><td>代码错误</td><td>对 null 调用方法</td><td>修复代码和空值处理</td></tr>
+        </tbody>
+      </table>
+      <p><code>return null</code> 是正常结束方法；<code>throw</code> 会中断正常流程并交给异常处理器。查询不到明确资源时，抛出业务异常比返回“成功但 data=null”更清晰。</p>
+
+      <h2 id="business-exception-class" data-toc="BusinessException">通用业务异常怎么设计</h2>
+      <pre><code>public class BusinessException extends RuntimeException {
+    private final HttpStatus status;
+
+    public BusinessException(HttpStatus status, String message) {
+        super(message);
+        this.status = status;
+    }
+
+    public HttpStatus getStatus() {
+        return status;
+    }
+}</code></pre>
+      <ul>
+        <li><code>extends RuntimeException</code>：定义运行时业务异常。</li>
+        <li><code>super(message)</code>：把描述交给父类保存，之后可用 <code>getMessage()</code> 获取。</li>
+        <li><code>this.status = status</code>：左边是成员变量，右边是构造参数。</li>
+        <li><code>final</code>：初始化后不能重新赋值。</li>
+      </ul>
+      <p>练习阶段也可以保存 int 状态码，但必须确保是合法 HTTP 状态。项目继续发展后，业务错误码和 HTTP 状态码应分开建模，避免把任意业务编号传给 <code>ResponseEntity.status(...)</code>。</p>
+
+      <h2 id="business-handler" data-toc="全局异常处理">在全局处理器统一返回</h2>
+      <pre><code>@ExceptionHandler(BusinessException.class)
+public ResponseEntity&lt;Result&lt;Void&gt;&gt; handleBusinessException(
+        BusinessException e) {
+
+    Result&lt;Void&gt; result = Result.error(e.getMessage());
+    result.setCode(e.getStatus().value());
+
+    return ResponseEntity
+            .status(e.getStatus())
+            .body(result);
+}</code></pre>
+      <p><code>result.setCode(...)</code> 设置 JSON 响应体里的 code；<code>ResponseEntity.status(...)</code> 设置真正的 HTTP 状态。Java 区分大小写，方法名是 <code>setCode</code> 和 <code>status</code>，不是 <code>setcode</code> 或 <code>getstatus</code>。</p>
+
+      <h2 id="business-service" data-toc="查询、修改与删除">Service 中什么时候抛异常</h2>
+      <pre><code>public User selectById(Long id) {
+    User user = userMapper.selectById(id);
+    if (user == null) {
+        throw new BusinessException(
+                HttpStatus.NOT_FOUND, "用户不存在");
+    }
+    return user;
+}</code></pre>
+      <p>修改可以先检查目标是否存在，也要关注 UPDATE 的实际影响行数。简单按主键删除通常可以直接根据 DELETE 返回值判断：</p>
+      <pre><code>int rows = userMapper.deleteById(user);
+if (rows == 0) {
+    throw new BusinessException(
+            HttpStatus.NOT_FOUND, "要删除的用户不存在");
+}</code></pre>
+      <p>这样少一次 SELECT，并且依据真实删除结果。如果删除前还需要权限、状态或关联数据检查，则仍要执行相应查询和业务判断。</p>
+
+      <h2 id="business-id-validation" data-toc="Long ID 校验">Long 类型 ID 应该怎样校验</h2>
+      <pre><code>if (user == null || user.getId() == null) {
+    throw new BusinessException(
+            HttpStatus.BAD_REQUEST, "用户ID不能为空");
+}
+
+if (user.getId() &lt;= 0) {
+    throw new BusinessException(
+            HttpStatus.BAD_REQUEST, "用户ID必须大于0");
+}</code></pre>
+      <p><code>Long</code> 是数字对象，只检查 null 和数值范围，不能与字符串 <code>""</code> 比较。ID 缺失或非法属于 400 Bad Request；401 表示缺少有效身份认证，不是通用参数错误。</p>
+
+      <h2 id="business-null-blank" data-toc="null、空串与空格">null、空字符串和空格不是一回事</h2>
+      <table>
+        <thead><tr><th>值</th><th>含义</th><th>适用类型</th></tr></thead>
+        <tbody>
+          <tr><td><code>null</code></td><td>没有对象或值</td><td>Long、String 等引用类型</td></tr>
+          <tr><td><code>""</code></td><td>长度为 0</td><td>String</td></tr>
+          <tr><td><code>"   "</code></td><td>只有空白字符</td><td>String</td></tr>
+          <tr><td><code>0L</code></td><td>数字 0</td><td>Long</td></tr>
+        </tbody>
+      </table>
+      <p>String 的 <code>isEmpty()</code> 只检查长度是否为 0，<code>isBlank()</code> 还会识别全空白；在 null 上直接调用两者都会空指针。必填用户名优先使用 <code>@NotBlank</code>。</p>
+      <p>如果 JSON 给 Long 字段传入 <code>"   "</code>，Jackson 会在进入 Service 前尝试类型转换，可能转成 null，也可能抛出消息读取异常，取决于配置。因此不能依赖 Service 中的 <code>id == ""</code> 处理类型错误。</p>
+
+      <h2 id="business-short-circuit" data-toc="短路保护">为什么 || 能避免空指针</h2>
+      <pre><code>if (user == null || user.getId() == null) {
+    // user 为 null 时，右侧不会执行
+}</code></pre>
+      <p>|| 左侧为 true 后结果已经确定，Java 不再执行右侧的 <code>user.getId()</code>。类似地：</p>
+      <pre><code>if (username != null &amp;&amp; username.isBlank()) {
+    // username 为 null 时，不调用 isBlank()
+}</code></pre>
+      <p><code>user != null &amp;&amp; user.getId() == null</code> 只处理“对象存在但 ID 为空”，不能覆盖 user 本身为 null 的情况；要根据业务目标选择 || 或 &amp;&amp;。</p>
+
+      <h2 id="business-tests" data-toc="测试矩阵">Postman 测试与状态码</h2>
+      <table>
+        <thead><tr><th>请求数据</th><th>预期</th></tr></thead>
+        <tbody>
+          <tr><td><code>{}</code> 或 <code>{"id":null}</code></td><td>HTTP 400，ID 不能为空</td></tr>
+          <tr><td><code>{"id":0}</code></td><td>HTTP 400，ID 必须大于 0</td></tr>
+          <tr><td>数据库不存在的正数 ID</td><td>HTTP 404，用户不存在</td></tr>
+          <tr><td><code>{"id":"   "}</code></td><td>观察消息转换层行为，不应成为有效 ID</td></tr>
+          <tr><td>存在的测试 ID</td><td>删除成功，并确认数据库记录消失</td></tr>
+        </tbody>
+      </table>
+      <p>400 表示请求参数不合法，401 表示未认证，404 表示资源不存在，409 适合用户名重复等业务冲突。不要只检查 JSON code，也要检查真实 HTTP 状态。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-result-validation">上一篇：统一响应与参数校验 →</button>
+        <button class="jump-link" type="button" data-id="java-boolean-logic">基础：逻辑运算与短路 →</button>
+        <button class="jump-link" type="button" data-id="interview-spring-boot">面试：Spring Boot 常见题 →</button>
       </p>
     `,
   },
   {
     id: "springboot-mybatis-pagination",
     category: "Spring Boot 开发",
-    order: 50,
+    order: 60,
     title: "MyBatis 分页查询：COUNT、LIMIT 与 PageResult",
     summary: "从分页参数到两次 SQL 查询和嵌套统一响应",
     related: [
@@ -1585,7 +1868,7 @@ public Result&lt;PageResult&lt;User&gt;&gt; page(
   {
     id: "springboot-dynamic-sql-search",
     category: "Spring Boot 开发",
-    order: 60,
+    order: 70,
     title: "MyBatis 动态 SQL：模糊查询与条件分页",
     summary: "用 LIKE、if 和 where 扩展可选用户名筛选",
     related: [
@@ -1729,7 +2012,7 @@ public Result&lt;PageResult&lt;User&gt;&gt; page(
   {
     id: "springboot-multi-condition-query",
     category: "Spring Boot 开发",
-    order: 70,
+    order: 80,
     title: "MyBatis 多条件动态查询：年龄区间与 SQL 排错",
     summary: "组合 username、minAge、maxAge，并从 500 异常定位转义错误",
     related: [
@@ -2567,6 +2850,7 @@ where id=1 and version=1;</code></pre>
     related: [
       "java-object-json-serialize",
       "java-object-create-dto",
+      "java-boolean-logic",
       "interceptor-threadlocal",
       "interview-answer-framework",
     ],
@@ -2610,8 +2894,15 @@ where id=1 and version=1;</code></pre>
       <blockquote>
         <p>synchronized 通过互斥和内存语义保护临界区；volatile 保证变量的可见性和一定的有序性，但不能让复合操作自动变成原子操作；ThreadLocal 为每个线程保存独立变量副本，不是锁。Web 项目可用 ThreadLocal 保存当前用户，但线程池会复用线程，请求结束必须 remove，异步线程也不会自动继承普通 ThreadLocal。</p>
       </blockquote>
+
+      <h2 id="interview-boolean-short-circuit" data-toc="逻辑运算与短路">&amp;&amp; 和 || 有什么区别，什么是短路？</h2>
+      <blockquote>
+        <p>&amp;&amp; 要求所有条件都为 true，|| 只要一个条件为 true。它们都会从左向右短路求值：&amp;&amp; 左侧为 false 时不再执行右侧，|| 左侧为 true 时不再执行右侧。短路既减少无用计算，也能先判断对象是否为 null，再安全访问属性。单个 &amp; 和 | 在 boolean 运算中不会短路，两侧都会执行。</p>
+      </blockquote>
+      <p><strong>项目联系：</strong>年龄范围校验中，每组先判断 Integer 非 null，再比较数值；多组错误之间用 || 连接。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="interceptor-threadlocal">深入：请求拦截与用户上下文 →</button>
+        <button class="jump-link" type="button" data-id="java-boolean-logic">基础：逻辑运算符与短路机制 →</button>
       </p>
     `,
   },
@@ -2625,6 +2916,7 @@ where id=1 and version=1;</code></pre>
       "java-spring-annotations",
       "springboot-user-admin-crud",
       "springboot-result-validation",
+      "springboot-business-exception",
       "interceptor-threadlocal",
       "db-isolation-locks",
     ],
@@ -2656,6 +2948,12 @@ where id=1 and version=1;</code></pre>
       </blockquote>
       <p><strong>回答思路：</strong>先说代理和事务边界，再列自己真正理解的失效场景，不要只背清单。</p>
 
+      <h2 id="interview-business-exception" data-toc="业务异常处理">Spring Boot 中怎样处理业务异常？</h2>
+      <blockquote>
+        <p>可以定义继承 RuntimeException 的 BusinessException，在 Service 根据业务规则主动抛出，并携带合适的 HTTP 状态或业务错误信息。全局使用 @RestControllerAdvice 和 @ExceptionHandler 捕获，转换为统一 Result 和真实 HTTP 状态。参数错误通常是 400，未认证是 401，资源不存在是 404，业务冲突可用 409；SQL 和代码缺陷不能包装成“业务失败”来掩盖。</p>
+      </blockquote>
+      <p><strong>项目联系：</strong>查询不到用户抛 404；删除影响 0 行也表示目标不存在；Long ID 检查 null 和正数范围，不能与空字符串比较。</p>
+
       <h2 id="interview-filter-interceptor-aop" data-toc="Filter、Interceptor、AOP">Filter、Interceptor 和 AOP 有什么区别？</h2>
       <blockquote>
         <p>Filter 属于 Servlet 规范，位置更靠外，可处理进入 Web 应用的请求与响应；Interceptor 属于 Spring MVC，围绕 Controller 调用，能拿到处理器信息，适合登录校验和请求上下文；AOP 围绕 Spring Bean 方法织入逻辑，适合日志、事务和统一监控。选择取决于要拦截的层级，不是谁更高级。</p>
@@ -2663,6 +2961,7 @@ where id=1 and version=1;</code></pre>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="java-spring-annotations">复习：Spring Boot 常用注解 →</button>
         <button class="jump-link" type="button" data-id="interceptor-threadlocal">复习：Interceptor 与 ThreadLocal →</button>
+        <button class="jump-link" type="button" data-id="springboot-business-exception">项目：业务异常与 ID 校验 →</button>
       </p>
     `,
   },

@@ -157,7 +157,7 @@
 当前分类及显示顺序由 `data.js` 顶部的 `KNOWLEDGE_CATEGORIES` 统一维护：
 
 - `学习路线与工具`：学习顺序、项目路线、IDE 与开发环境
-- `Java 与数据交互`：Java 对象、DTO、JSON、序列化与接口参数
+- `Java 基础与数据交互`：逻辑运算、对象、DTO、JSON、序列化与接口参数
 - `Spring Boot 开发`：框架核心、常用注解、Web 开发与项目实践
 - `认证与安全`：登录、Token、SSO 与权限相关概念
 - `数据库与高并发`：事务、锁、一致性、Redis、MQ 与并发场景
