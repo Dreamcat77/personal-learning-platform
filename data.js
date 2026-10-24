@@ -2842,12 +2842,107 @@ where id=1 and version=1;</code></pre>
     `,
   },
   {
-    id: "interview-java-core",
+    id: "interview-java-language-basics",
     category: "Java 后端面试",
     order: 20,
-    title: "Java 核心常见面试题",
-    summary: "对象、集合、异常、线程和 ThreadLocal 的回答思路",
+    title: "Java 基础语法与面向对象高频面试题",
+    summary: "基本类型、equals、值传递、重载重写、接口和 String",
     related: [
+      "java-boolean-logic",
+      "java-object-create-dto",
+      "java-object-json-serialize",
+      "interview-java-core",
+      "interview-answer-framework",
+    ],
+    content: `
+      <span class="article-tag">Java 后端面试 · 基础语法/OOP</span>
+      <h1>Java 基础语法与面向对象高频面试题</h1>
+      <p class="lead">这一组题看起来基础，却最容易暴露概念是否扎实。回答时先给准确结论，再用一小段代码说明，不要只背“地址和值”几个词。</p>
+
+      <h2 id="interview-primitive-wrapper" data-toc="基本类型与包装类">基本类型和包装类型有什么区别？</h2>
+      <blockquote>
+        <p>基本类型直接表示数值或布尔值，例如 int、long、boolean；包装类型是对象，例如 Integer、Long、Boolean，可以为 null，也能用于泛型和集合。Java 支持自动装箱和拆箱，但包装对象为 null 时自动拆箱会抛出 NullPointerException。业务 DTO 常用 Integer、Long 表达“参数未提供”，计算密集的局部变量则常用基本类型。</p>
+      </blockquote>
+      <pre><code>Integer age = null;
+int value = age; // 自动拆箱，抛 NullPointerException</code></pre>
+      <p><strong>常见追问：</strong>为什么两个 Integer 不应依赖 <code>==</code> 比较数值？因为包装对象可能涉及缓存或不同对象，应使用 <code>equals</code>，并先处理 null。</p>
+
+      <h2 id="interview-equals" data-toc="==、equals、hashCode">==、equals 和 hashCode 有什么区别？</h2>
+      <p><strong>回答思路：</strong>先区分基本类型和引用类型，再说明哈希容器的契约。</p>
+      <blockquote>
+        <p>基本类型的 == 比较值；引用类型的 == 比较两个变量是否指向同一个对象。Object 默认的 equals 也是比较身份，但 String 等类重写后会比较内容。若两个对象 equals 为 true，它们的 hashCode 必须相同，否则 HashMap、HashSet 可能把相等对象放到不同桶；hashCode 相同不代表 equals 一定为 true，因为可能哈希冲突。</p>
+      </blockquote>
+      <pre><code>String a = new String("Java");
+String b = new String("Java");
+
+a == b       // false：不是同一对象
+a.equals(b)  // true：内容相同</code></pre>
+      <p><strong>常见追问：</strong>自定义对象作为 HashMap key 时，为什么通常要同时重写 equals 和 hashCode？</p>
+
+      <h2 id="interview-value-passing" data-toc="Java 值传递">Java 是值传递还是引用传递？</h2>
+      <blockquote>
+        <p>Java 只有值传递。传基本类型时复制具体值；传对象时复制的是“对象引用这个值”，所以方法内可以通过副本修改同一个对象的字段，但把形参重新指向新对象不会改变调用方变量本身。</p>
+      </blockquote>
+      <pre><code>void rename(User user) {
+    user.setUsername("Li"); // 修改同一个对象，调用方能看到
+    user = new User();      // 只改变形参副本的指向
+}</code></pre>
+      <p>不要回答成“基本类型值传递、对象引用传递”；更准确的说法是两者都是值传递，只是对象参数传递的值恰好是引用。</p>
+
+      <h2 id="interview-overload-override" data-toc="重载与重写">重载和重写有什么区别？</h2>
+      <table>
+        <thead><tr><th>概念</th><th>发生位置</th><th>判断依据</th></tr></thead>
+        <tbody>
+          <tr><td>重载 Overload</td><td>通常在同一个类</td><td>方法名相同，参数列表不同</td></tr>
+          <tr><td>重写 Override</td><td>父子类或接口实现</td><td>子类提供相同方法签名的新实现</td></tr>
+        </tbody>
+      </table>
+      <p>重载在编译期根据参数选择方法，不能只靠返回类型区分；重写体现运行时多态，访问权限不能比父类更严格，建议使用 <code>@Override</code> 让编译器检查。</p>
+
+      <h2 id="interview-oop" data-toc="封装、继承、多态">怎样理解封装、继承和多态？</h2>
+      <blockquote>
+        <p>封装把数据和行为放在清晰边界内，通过公开方法维护对象状态；继承让子类复用并扩展父类能力，但会形成较强耦合；多态让父类型引用在运行时调用不同子类实现。实际设计通常优先组合和接口，只有存在稳定“是一个”的关系时才使用继承。</p>
+      </blockquote>
+      <p><strong>项目联系：</strong>Service 依赖 Mapper 接口而不是具体实现，MyBatis 在运行时提供代理对象，就是面向接口和多态的实际例子。</p>
+
+      <h2 id="interview-interface-abstract" data-toc="接口与抽象类">接口和抽象类有什么区别？</h2>
+      <blockquote>
+        <p>接口更适合定义能力和契约，一个类可以实现多个接口；抽象类适合表达有共同状态和部分实现的父类，一个类只能直接继承一个类。现代 Java 接口可以有 default、static 方法，但通常仍不用于保存普通实例状态。选择时先问“需要共享状态和实现，还是只需要统一能力”。</p>
+      </blockquote>
+      <p><strong>常见追问：</strong>Mapper 为什么是接口？便于声明数据访问契约，并由 MyBatis 生成代理实现。</p>
+
+      <h2 id="interview-final-finally" data-toc="final、finally、finalize">final、finally、finalize 有什么区别？</h2>
+      <ul>
+        <li><code>final</code>：变量只能赋值一次、方法不能被重写、类不能被继承；final 引用不能改指向，但对象内容未必不可变。</li>
+        <li><code>finally</code>：异常处理结构的一部分，通常用于清理资源；现代 Java 更推荐 try-with-resources 管理可关闭资源。</li>
+        <li><code>finalize()</code>：过去由垃圾回收前尝试调用的机制，不可靠且已被弃用并计划移除，不应作为资源释放方案。</li>
+      </ul>
+
+      <h2 id="interview-static" data-toc="static 与实例成员">static 和实例成员有什么区别？</h2>
+      <blockquote>
+        <p>static 成员属于类，类加载后可通过类名访问；实例成员属于具体对象，需要对象才能访问。static 方法没有 this，不能直接使用实例字段。工具函数或无状态工厂方法可以是 static，但把可变业务状态放进 static 字段会形成全局共享，带来并发和测试问题。</p>
+      </blockquote>
+
+      <h2 id="interview-string-builders" data-toc="String 与 Builder">String、StringBuilder、StringBuffer 怎么选？</h2>
+      <blockquote>
+        <p>String 不可变，修改会产生新对象，适合普通文本和作为 Map key；StringBuilder 可变且非线程安全，单线程循环拼接时通常优先使用；StringBuffer 的常用方法带同步，线程安全开销更高，但多个线程共享同一缓冲区本身就应谨慎设计。</p>
+      </blockquote>
+      <p>String 不可变有利于常量池、哈希缓存、线程共享和安全，但“变量重新指向新 String”不代表原对象被修改。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="java-boolean-logic">基础：逻辑运算符与短路 →</button>
+        <button class="jump-link" type="button" data-id="interview-java-core">下一篇：集合、异常与并发 →</button>
+        <button class="jump-link" type="button" data-id="java-object-create-dto">项目基础：对象与 DTO →</button>
+      </p>
+    `,
+  },
+  {
+    id: "interview-java-core",
+    category: "Java 后端面试",
+    order: 30,
+    title: "Java 集合、异常与并发常见面试题",
+    summary: "集合底层、异常体系、线程可见性和短路逻辑",
+    related: [
+      "interview-java-language-basics",
       "java-object-json-serialize",
       "java-object-create-dto",
       "java-boolean-logic",
@@ -2855,22 +2950,9 @@ where id=1 and version=1;</code></pre>
       "interview-answer-framework",
     ],
     content: `
-      <span class="article-tag">Java 后端面试 · Java 核心</span>
-      <h1>Java 核心常见面试题</h1>
-      <p class="lead">先掌握能和后端代码联系起来的核心题。回答时不要只报术语，要说清比较规则、数据结构或线程可见性解决的具体问题。</p>
-
-      <h2 id="interview-equals" data-toc="== 与 equals">==、equals 和 hashCode 有什么关系？</h2>
-      <p><strong>回答思路：</strong>先区分引用与内容，再说明哈希容器为什么同时需要 equals 和 hashCode。</p>
-      <blockquote>
-        <p>基本类型使用 == 比较值；引用类型的 == 比较是否指向同一对象。equals 默认也是比较引用，但 String 等类重写后会比较内容。若两个对象 equals 为 true，它们的 hashCode 必须相同，否则 HashMap、HashSet 可能把相等对象放到不同桶中；hashCode 相同则不代表 equals 一定为 true，因为可能发生哈希冲突。</p>
-      </blockquote>
-      <p><strong>常见追问：</strong>自定义 DTO 作为 HashMap key 时，为什么要同时重写 equals 和 hashCode？</p>
-
-      <h2 id="interview-string" data-toc="String 不可变">String 为什么不可变？</h2>
-      <blockquote>
-        <p>String 创建后内容不能改变，修改操作会产生新对象。不可变性使字符串常量池、哈希值缓存、线程共享和安全场景更可靠。例如 URL、类名或配置键作为 Map key 时，不会在放入后因内容变化导致查找异常。频繁拼接字符串时应使用 StringBuilder，避免产生大量中间对象。</p>
-      </blockquote>
-      <p><strong>回答边界：</strong>“引用变量重新指向新字符串”不等于原 String 对象被修改。</p>
+      <span class="article-tag">Java 后端面试 · 集合/异常/并发</span>
+      <h1>Java 集合、异常与并发常见面试题</h1>
+      <p class="lead">这一篇聚焦后端代码中最常见的集合选择、HashMap、异常处理和线程语义；基础类型、equals、重载重写等内容放在前一篇。</p>
 
       <h2 id="interview-list" data-toc="ArrayList 与 LinkedList">ArrayList 和 LinkedList 怎么选？</h2>
       <blockquote>
@@ -2901,6 +2983,7 @@ where id=1 and version=1;</code></pre>
       </blockquote>
       <p><strong>项目联系：</strong>年龄范围校验中，每组先判断 Integer 非 null，再比较数值；多组错误之间用 || 连接。</p>
       <p class="jump-row">
+        <button class="jump-link" type="button" data-id="interview-java-language-basics">上一篇：基础语法与面向对象 →</button>
         <button class="jump-link" type="button" data-id="interceptor-threadlocal">深入：请求拦截与用户上下文 →</button>
         <button class="jump-link" type="button" data-id="java-boolean-logic">基础：逻辑运算符与短路机制 →</button>
       </p>
@@ -2909,7 +2992,7 @@ where id=1 and version=1;</code></pre>
   {
     id: "interview-spring-boot",
     category: "Java 后端面试",
-    order: 30,
+    order: 40,
     title: "Spring 与 Spring Boot 常见面试题",
     summary: "IOC、自动配置、请求链路、事务和拦截机制",
     related: [
@@ -2968,7 +3051,7 @@ where id=1 and version=1;</code></pre>
   {
     id: "interview-mysql-transaction",
     category: "Java 后端面试",
-    order: 40,
+    order: 50,
     title: "MySQL、索引与事务常见面试题",
     summary: "索引、隔离级别、MVCC、锁和 SQL 排查思路",
     related: [
@@ -3037,7 +3120,7 @@ EXPLAIN 检查访问类型、索引和扫描行数
   {
     id: "interview-redis-mq",
     category: "Java 后端面试",
-    order: 50,
+    order: 60,
     title: "Redis、MQ 与高并发常见面试题",
     summary: "缓存问题、分布式锁、削峰、幂等和最终一致性",
     related: [
@@ -3097,7 +3180,7 @@ EXPLAIN 检查访问类型、索引和扫描行数
   {
     id: "interview-http-linux",
     category: "Java 后端面试",
-    order: 60,
+    order: 70,
     title: "HTTP、认证与 Linux 排查常见面试题",
     summary: "状态码、请求语义、Token、HTTPS 和线上故障定位",
     related: [
