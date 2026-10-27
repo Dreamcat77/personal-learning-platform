@@ -12,7 +12,7 @@ window.KNOWLEDGE = [
   {
     id: "interceptor-threadlocal",
     category: "Spring Boot 开发",
-    order: 90,
+    order: 100,
     title: "请求拦截与用户上下文",
     summary: "用 Interceptor 和 ThreadLocal 管理当前登录用户",
     related: ["sso-single-sign-on"],
@@ -1632,6 +1632,7 @@ HTTP 400 + Result.error(message)</pre>
       "springboot-result-validation",
       "springboot-post-create-user",
       "java-boolean-logic",
+      "springboot-transaction-bean",
       "interview-spring-boot",
       "interview-http-linux",
     ],
@@ -2149,6 +2150,163 @@ AND age &amp;gt;= #{minAge}</code></pre>
     `,
   },
   {
+    id: "springboot-transaction-bean",
+    category: "Spring Boot 开发",
+    order: 90,
+    title: "Spring 事务与 Bean：从回滚实验理解代理",
+    summary: "用异常、try-catch、自调用和跨 Bean 调用验证事务何时生效",
+    related: [
+      "java-spring-annotations",
+      "springboot-business-exception",
+      "interview-spring-boot",
+      "db-isolation-locks",
+    ],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 项目实战</span>
+      <h1>Spring 事务与 Bean：从回滚实验理解代理</h1>
+      <p class="lead">这次练习不是只记住一个 <code>@Transactional</code>，而是用多组对照实验回答三个问题：事务有没有开启、异常是否符合回滚规则、调用有没有经过 Spring 代理。</p>
+
+      <h2 id="transaction-boundary" data-toc="事务与实验边界">事务解决什么问题</h2>
+      <p>事务把一组数据库操作作为一个整体：正常完成时 <strong>Commit</strong>，失败并满足回滚规则时 <strong>Rollback</strong>。例如连续修改两位用户后发生业务失败，正确的事务边界应避免只留下部分修改。</p>
+      <pre><code>@Transactional
+public void updateTwoUsers(Long id1, Long id2) {
+    userMapper.updateAgeById(id1, 81);
+    userMapper.updateAgeById(id2, 82);
+    throw new RuntimeException("模拟业务失败");
+}</code></pre>
+      <p>实验只使用可恢复的测试数据，并在每轮开始前记录基线。HTTP 500 是故意抛出异常后的预期现象之一；是否回滚要以数据库最终状态为准。</p>
+
+      <h2 id="transaction-mapper" data-toc="准备更新 SQL">先保证 SQL 确实命中数据</h2>
+      <pre><code>@Update("UPDATE user SET age = #{age} WHERE id = #{id}")
+int updateAgeById(@Param("id") Long id,
+                  @Param("age") Integer age);</code></pre>
+      <p>参数非 null 只能说明请求传了 ID，不能证明记录存在。实验前先校验两个 ID 为正数且彼此不同，执行后再检查受影响行数：</p>
+      <pre><code>int rows1 = userMapper.updateAgeById(id1, 81);
+int rows2 = userMapper.updateAgeById(id2, 82);
+if (rows1 != 1 || rows2 != 1) {
+    throw new BusinessException(404, "测试用户不存在或修改失败");
+}</code></pre>
+
+      <h2 id="transaction-basic-test" data-toc="有无事务对照">无事务与正常事务对照</h2>
+      <table>
+        <thead><tr><th>写法</th><th>发生 RuntimeException 后</th><th>原因</th></tr></thead>
+        <tbody>
+          <tr><td>没有事务</td><td>两条更新通常已经提交</td><td>后续 Java 异常不会自动撤销已提交 SQL</td></tr>
+          <tr><td><code>@Transactional</code></td><td>两条更新一起回滚</td><td>异常传播到事务边界，触发默认回滚规则</td></tr>
+        </tbody>
+      </table>
+      <p>项目中的 <code>BusinessException</code> 继承 <code>RuntimeException</code>，因此异常未被吞掉时默认也会触发回滚。这个结论还依赖事务管理器配置和支持事务的数据库引擎。</p>
+
+      <h2 id="transaction-exception" data-toc="异常与回滚规则">try-catch 和异常类型怎样影响回滚</h2>
+      <ul>
+        <li><strong>捕获后不再抛出：</strong>事务代理看到方法正常结束，通常会提交。</li>
+        <li><strong>catch 后重新 throw：</strong>运行时异常继续传播，默认回滚规则可以生效。</li>
+        <li><strong>抛出 IOException：</strong>它是受检异常，默认不触发 Spring 事务回滚。</li>
+        <li><strong>指定 rollbackFor：</strong>可以把业务需要的受检异常纳入回滚范围。</li>
+      </ul>
+      <pre><code>@Transactional(rollbackFor = IOException.class)
+public void updateTwoUsers(...) throws IOException {
+    // 执行两条 UPDATE
+    throw new IOException("模拟受检异常");
+}</code></pre>
+      <p><code>throw e</code> 是在方法体里真正抛出异常；<code>throws IOException</code> 是在方法声明上告诉调用方可能出现该异常，两者不要混淆。异常也不应只为触发回滚而一律改成运行时异常，要根据业务语义设计。</p>
+
+      <h2 id="transaction-self-invocation" data-toc="同类自调用失效">为什么 this 调用可能让事务失效</h2>
+      <pre><code>@Service
+public class UserService {
+    public void testSelfCall(Long id1, Long id2) {
+        this.updateTwoUsers(id1, id2);
+    }
+
+    @Transactional
+    public void updateTwoUsers(Long id1, Long id2) {
+        // 两条 UPDATE 后抛出 RuntimeException
+    }
+}</code></pre>
+      <pre class="flow">外部调用 → Spring 代理 → 目标 Bean 方法
+                              ↓
+                    this.updateTwoUsers()
+                              ↓
+                 不会再次经过事务代理</pre>
+      <p>Spring 声明式事务通常依靠代理拦截外部方法调用。同一个对象内部的 <code>this</code> 调用不会重新穿过代理，所以被调用方法自己的事务配置可能不生效。但如果外层方法已经成功开启事务，内部 SQL 仍可能加入外层事务，不能简单说“自调用一定没有事务”。</p>
+
+      <h2 id="transaction-cross-bean" data-toc="拆成两个 Bean">跨 Bean 调用让代理参与</h2>
+      <pre><code>@Service
+public class TransactionService {
+    private final UserMapper userMapper;
+
+    public TransactionService(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
+
+    @Transactional
+    public void updateTwoUsers(Long id1, Long id2) {
+        // 校验参数、执行两条 UPDATE、检查 rows
+        throw new RuntimeException("跨 Service 调用：模拟失败");
+    }
+}</code></pre>
+      <pre><code>@Service
+public class UserService {
+    private final TransactionService transactionService;
+
+    public UserService(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
+
+    public void testThroughBean(Long id1, Long id2) {
+        transactionService.updateTwoUsers(id1, id2);
+    }
+}</code></pre>
+      <p><code>transactionService</code> 由 Spring 注入，调用事务方法时能够经过其代理：代理先开启事务，再调用真实对象。实践中也可以调整事务边界，让外层公开 Service 方法直接承担完整业务事务。</p>
+
+      <h2 id="transaction-bean-ioc" data-toc="Bean、IoC 与 DI">Bean、IoC、DI 和代理的关系</h2>
+      <blockquote>
+        <p><strong>Spring Bean 是由 Spring IoC 容器创建、保存和管理的 Java 对象。</strong></p>
+      </blockquote>
+      <ul>
+        <li><strong>IoC：</strong>对象创建和依赖组织的控制权交给容器。</li>
+        <li><strong>DI：</strong>容器通过构造器等方式把依赖传给对象，是实现 IoC 的常用方式。</li>
+        <li><strong>AOP 代理：</strong>在 Bean 方法调用前后加入事务、日志等横切逻辑。</li>
+      </ul>
+      <p><code>@Component</code>、<code>@Service</code> 和 <code>@Controller</code> 常通过组件扫描注册类；<code>@Bean</code> 把配置方法返回的对象交给容器；<code>@Mapper</code> 由 MyBatis 创建代理并注册。<code>@Bean</code> 是注解，Spring Bean 是容器管理的对象，二者不是同一个概念。</p>
+
+      <h2 id="transaction-results" data-toc="实验结果速查">八组实验结果速查</h2>
+      <table>
+        <thead><tr><th>场景</th><th>数据库结果</th><th>关键判断</th></tr></thead>
+        <tbody>
+          <tr><td>无事务 + RuntimeException</td><td>通常已修改</td><td>没有统一事务边界</td></tr>
+          <tr><td>事务 + RuntimeException</td><td>回滚</td><td>符合默认规则</td></tr>
+          <tr><td>catch 后吞掉异常</td><td>通常提交</td><td>代理没看到异常</td></tr>
+          <tr><td>catch 后重新抛出</td><td>回滚</td><td>异常传播到边界</td></tr>
+          <tr><td>事务 + IOException</td><td>默认提交</td><td>受检异常不在默认范围</td></tr>
+          <tr><td>rollbackFor + IOException</td><td>回滚</td><td>显式扩展规则</td></tr>
+          <tr><td>无事务外层 + 同类自调用</td><td>通常已修改</td><td>绕过目标方法代理</td></tr>
+          <tr><td>跨 Bean 调用事务方法</td><td>回滚</td><td>调用经过代理</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="transaction-debug" data-toc="排错与复习">排错顺序与面试表达</h2>
+      <pre class="flow">确认请求方式和测试基线
+  ↓
+确认 UPDATE 各影响 1 行
+  ↓
+确认方法是否经过 Spring 代理
+  ↓
+确认异常有没有传播到事务边界
+  ↓
+确认异常类型是否符合回滚规则
+  ↓
+最后检查事务管理器和数据库引擎</pre>
+      <p>HTTP 405 通常是请求方法不匹配；HTTP 500 在本实验中可能正是故意抛错的结果。面试时可概括为：<strong>Spring 通过代理建立事务边界，方法正常完成时提交，符合规则的异常传播到边界时回滚；吞异常、受检异常默认规则和同类自调用是常见失效原因。</strong></p>
+      <p>下一步可继续实验 <code>REQUIRED</code> 与 <code>REQUIRES_NEW</code>，观察外层失败时内层事务是否独立提交。事务测试接口只应保留在本地学习环境，不要部署到生产。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="java-spring-annotations/ann-tx">基础：@Transactional 注解 →</button>
+        <button class="jump-link" type="button" data-id="interview-spring-boot/interview-transactional">面试：事务失效场景 →</button>
+        <button class="jump-link" type="button" data-id="db-isolation-locks">进阶：事务隔离与并发锁 →</button>
+      </p>
+    `,
+  },
+  {
     id: "java-spring-annotations",
     category: "Spring Boot 开发",
     order: 10,
@@ -2160,6 +2318,7 @@ AND age &amp;gt;= #{minAge}</code></pre>
       "case-concurrent-withdraw",
       "interceptor-threadlocal",
       "springboot-user-admin-crud",
+      "springboot-transaction-bean",
     ],
     content: `
       <span class="article-tag">Spring Boot 开发</span>
@@ -2279,6 +2438,7 @@ public void transfer() {
       </blockquote>
       <p>注意：它<strong>不能单独解决多事务并发竞争</strong>（例如两个人同时扣同一账户）。</p>
       <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-transaction-bean">实战：事务回滚与 Bean 代理 →</button>
         <button class="jump-link" type="button" data-id="db-isolation-locks">含义：事务隔离与并发锁 →</button>
         <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景解析：并发扣款 →</button>
       </p>
@@ -3000,6 +3160,7 @@ a.equals(b)  // true：内容相同</code></pre>
       "springboot-user-admin-crud",
       "springboot-result-validation",
       "springboot-business-exception",
+      "springboot-transaction-bean",
       "interceptor-threadlocal",
       "db-isolation-locks",
     ],
@@ -3030,6 +3191,9 @@ a.equals(b)  // true：内容相同</code></pre>
         <p>Spring 通常通过代理开启事务。常见失效或不回滚原因包括：同类内部自调用绕过代理、方法不是可代理的公开方法、异常被 catch 后没有继续抛出、抛出的异常不在默认回滚范围、操作的不是同一个事务资源。MySQL 本地事务也不能自动回滚 Redis 或 MQ。</p>
       </blockquote>
       <p><strong>回答思路：</strong>先说代理和事务边界，再列自己真正理解的失效场景，不要只背清单。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-transaction-bean">项目实验：事务与 Bean 代理 →</button>
+      </p>
 
       <h2 id="interview-business-exception" data-toc="业务异常处理">Spring Boot 中怎样处理业务异常？</h2>
       <blockquote>
