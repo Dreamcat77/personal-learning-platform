@@ -2158,6 +2158,7 @@ AND age &amp;gt;= #{minAge}</code></pre>
     related: [
       "java-spring-annotations",
       "springboot-business-exception",
+      "springboot-transaction-propagation",
       "interview-spring-boot",
       "db-isolation-locks",
     ],
@@ -2298,11 +2299,120 @@ public class UserService {
   ↓
 最后检查事务管理器和数据库引擎</pre>
       <p>HTTP 405 通常是请求方法不匹配；HTTP 500 在本实验中可能正是故意抛错的结果。面试时可概括为：<strong>Spring 通过代理建立事务边界，方法正常完成时提交，符合规则的异常传播到边界时回滚；吞异常、受检异常默认规则和同类自调用是常见失效原因。</strong></p>
-      <p>下一步可继续实验 <code>REQUIRED</code> 与 <code>REQUIRES_NEW</code>，观察外层失败时内层事务是否独立提交。事务测试接口只应保留在本地学习环境，不要部署到生产。</p>
+      <p>完成基础回滚实验后，下一步是理解事务方法互相调用时，究竟共用一个事务还是创建独立事务。事务测试接口只应保留在本地学习环境，不要部署到生产。</p>
       <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-transaction-propagation">下一篇：事务传播与 rollback-only →</button>
         <button class="jump-link" type="button" data-id="java-spring-annotations/ann-tx">基础：@Transactional 注解 →</button>
         <button class="jump-link" type="button" data-id="interview-spring-boot/interview-transactional">面试：事务失效场景 →</button>
         <button class="jump-link" type="button" data-id="db-isolation-locks">进阶：事务隔离与并发锁 →</button>
+      </p>
+    `,
+  },
+  {
+    id: "springboot-transaction-propagation",
+    category: "Spring Boot 开发",
+    order: 95,
+    title: "Spring 事务传播：REQUIRED 与 REQUIRES_NEW",
+    summary: "理解事务加入、独立提交、rollback-only 与 UnexpectedRollbackException",
+    related: [
+      "springboot-transaction-bean",
+      "interview-spring-boot",
+      "db-isolation-locks",
+      "springboot-business-exception",
+    ],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 事务进阶</span>
+      <h1>Spring 事务传播：REQUIRED 与 REQUIRES_NEW</h1>
+      <p class="lead">事务传播解决的是“一个事务方法调用另一个事务方法时怎么办”。本阶段通过外层修改用户 A、内层修改用户 B 的对照实验，观察共用事务和独立事务的差别，并继续理解 <code>rollback-only</code>。</p>
+
+      <h2 id="propagation-meaning" data-toc="什么是事务传播">传播机制决定加入还是新建</h2>
+      <pre class="flow">外层事务方法
+  ↓ 调用另一个 Spring Bean
+内层事务方法
+  ├─ REQUIRED：加入已有事务
+  └─ REQUIRES_NEW：挂起外层，创建新事务</pre>
+      <p>传播配置只有在事务方法调用经过 Spring 代理时才有机会生效。同类内部 <code>this.method()</code> 调用仍可能绕过被调用方法自己的事务拦截，因此实验继续使用两个 Spring Bean。</p>
+
+      <h2 id="propagation-required" data-toc="REQUIRED 共用事务">REQUIRED：有事务就加入，没有就创建</h2>
+      <pre><code>@Transactional(propagation = Propagation.REQUIRED)
+public void updateSecondUserAge(Long id) {
+    userMapper.updateAgeById(id, 82);
+}</code></pre>
+      <p><code>REQUIRED</code> 是 <code>@Transactional</code> 的默认传播行为。内层加入外层时，两者共用同一个物理事务；内层方法正常返回只表示它的代码执行结束，并不表示事务已经提交，最终提交权仍在最外层事务边界。</p>
+
+      <h2 id="propagation-requires-new" data-toc="REQUIRES_NEW 独立事务">REQUIRES_NEW：挂起外层并新建事务</h2>
+      <pre><code>@Transactional(propagation = Propagation.REQUIRES_NEW)
+public void updateSecondUserAge(Long id) {
+    userMapper.updateAgeById(id, 82);
+}</code></pre>
+      <p>存在外层事务时，Spring 会先挂起外层事务，为内层创建独立事务；内层完成后恢复外层事务。因此内层可以独立提交或回滚，不会因为外层之后回滚而撤销已经提交的数据。</p>
+      <p>独立事务通常还需要另一条数据库连接。高并发下要评估连接池容量、锁等待和调用层级，不能把 <code>REQUIRES_NEW</code> 当成“更安全”的默认选择。</p>
+
+      <h2 id="propagation-comparison" data-toc="两轮对照实验">外层失败时，两种传播行为有什么结果</h2>
+      <p>两轮实验保持相同条件：外层把用户 A 从 20 改为 81，内层把用户 B 从 21 改为 82，随后外层抛出 <code>RuntimeException</code>。只改变内层传播配置。</p>
+      <table>
+        <thead><tr><th>内层配置</th><th>用户 A</th><th>用户 B</th><th>原因</th></tr></thead>
+        <tbody>
+          <tr><td>REQUIRED</td><td>20</td><td>21</td><td>共用事务，外层失败后一起回滚</td></tr>
+          <tr><td>REQUIRES_NEW</td><td>20</td><td>82</td><td>内层先独立提交，外层事务单独回滚</td></tr>
+        </tbody>
+      </table>
+      <blockquote>
+        <p><strong>核心区别：REQUIRED 加入当前事务；REQUIRES_NEW 开启独立事务。</strong></p>
+      </blockquote>
+
+      <h2 id="propagation-rollback-only" data-toc="rollback-only 标记">为什么外层 catch 了异常仍可能回滚</h2>
+      <p><code>rollback-only</code> 表示当前事务已经被标记为“只能回滚，不能提交”。一个典型过程是：</p>
+      <pre class="flow">外层开启事务 A
+  ↓
+内层 REQUIRED 加入事务 A
+  ↓
+内层抛出运行时异常
+  ↓
+事务拦截器把共享事务标记为 rollback-only
+  ↓
+外层 catch 异常并继续执行
+  ↓
+外层尝试提交 → 只能回滚</pre>
+      <p>外层捕获 Java 异常，只是控制了异常传播和后续代码执行；它不会自动清除事务管理器已经设置的回滚标记。</p>
+
+      <h2 id="propagation-unexpected-rollback" data-toc="UnexpectedRollbackException">UnexpectedRollbackException 怎样出现</h2>
+      <pre><code>@Transactional
+public void outer(Long id1, Long id2) {
+    userMapper.updateAgeById(id1, 81);
+    try {
+        transactionService.updateSecondUserAgeAndFail(id2);
+    } catch (RuntimeException e) {
+        log.warn("内层失败：{}", e.getMessage());
+    }
+    // 方法看似正常结束，Spring 随后尝试提交共享事务
+}</code></pre>
+      <p>如果内层是经过代理调用的 <code>REQUIRED</code> 方法，并因符合规则的异常把共享事务标记为 rollback-only，外层在提交阶段会发现无法提交，最终回滚并可能抛出 <code>UnexpectedRollbackException</code>。</p>
+      <p><strong>验证状态：</strong>这是本阶段整理出的待验证实验方案和预期机制，不应在亲自运行前写成“已实测”。如果内层改为 <code>REQUIRES_NEW</code>，它的失败只回滚独立事务；外层 catch 后若没有其他失败，外层仍可提交。</p>
+
+      <h2 id="propagation-selection" data-toc="项目中怎样选择">项目中怎样选择传播行为</h2>
+      <table>
+        <thead><tr><th>需求</th><th>优先考虑</th><th>示例</th></tr></thead>
+        <tbody>
+          <tr><td>多个操作必须同成同败</td><td>REQUIRED</td><td>订单与订单明细、用户与关联数据</td></tr>
+          <tr><td>主业务失败后仍要独立保存</td><td>谨慎使用 REQUIRES_NEW</td><td>失败记录、确需独立提交的审计记录</td></tr>
+        </tbody>
+      </table>
+      <p>选择依据是业务一致性边界，不是哪个注解“更强”。独立提交会产生主业务失败但部分数据已落库的状态，必须确认这是业务真正需要的结果。</p>
+
+      <h2 id="propagation-checklist" data-toc="排错与复习清单">传播问题的排错顺序</h2>
+      <ol>
+        <li>确认外层和内层是否都是 Spring 管理的 Bean，调用是否经过代理。</li>
+        <li>确认内层使用 REQUIRED 还是 REQUIRES_NEW，不要只看有没有 <code>@Transactional</code>。</li>
+        <li>确认异常在哪一层抛出、在哪一层捕获，以及是否符合回滚规则。</li>
+        <li>分别查看控制台异常和数据库最终状态，HTTP 200/500 不能单独证明事务结果。</li>
+        <li>每轮恢复测试数据，只改变一个传播配置，避免实验条件互相干扰。</li>
+      </ol>
+      <p>下一阶段适合用 JUnit 5、Mockito 和 MockMvc 把手工实验转成可重复测试，并特别验证事务测试方法自身的自动回滚行为。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-transaction-bean">上一篇：事务回滚与 Bean 代理 →</button>
+        <button class="jump-link" type="button" data-id="interview-spring-boot/interview-propagation">面试：事务传播与 rollback-only →</button>
+        <button class="jump-link" type="button" data-id="db-isolation-locks">相关：事务隔离与并发锁 →</button>
       </p>
     `,
   },
@@ -3161,6 +3271,7 @@ a.equals(b)  // true：内容相同</code></pre>
       "springboot-result-validation",
       "springboot-business-exception",
       "springboot-transaction-bean",
+      "springboot-transaction-propagation",
       "interceptor-threadlocal",
       "db-isolation-locks",
     ],
@@ -3193,6 +3304,15 @@ a.equals(b)  // true：内容相同</code></pre>
       <p><strong>回答思路：</strong>先说代理和事务边界，再列自己真正理解的失效场景，不要只背清单。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-transaction-bean">项目实验：事务与 Bean 代理 →</button>
+      </p>
+
+      <h2 id="interview-propagation" data-toc="事务传播与 rollback-only">REQUIRED、REQUIRES_NEW 和 rollback-only 有什么关系？</h2>
+      <blockquote>
+        <p>REQUIRED 有事务就加入，没有就创建，因此内外层通常共用一个物理事务；REQUIRES_NEW 会挂起外层并创建独立事务。共享事务中的内层方法若触发回滚规则，事务可能被标记为 rollback-only。即使外层 catch 了异常，提交时仍只能回滚，并可能出现 UnexpectedRollbackException。</p>
+      </blockquote>
+      <p><strong>回答边界：</strong>REQUIRES_NEW 能独立提交，但会占用额外连接，也会形成“主业务回滚、内层数据已提交”的状态，只应按一致性需求选择。</p>
+      <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-transaction-propagation">项目实验：事务传播机制 →</button>
       </p>
 
       <h2 id="interview-business-exception" data-toc="业务异常处理">Spring Boot 中怎样处理业务异常？</h2>
