@@ -4,6 +4,12 @@
 
 在线仓库：https://github.com/Dreamcat77/personal-learning-platform
 
+## AI Agent 智能体学习模块
+
+左侧「AI Agent 智能体」分类包含 14 篇文章，从「Agent 学习路线」进入，依次学习模型基础、提示词与结构化输出、工具调用、RAG、记忆、工作流与多 Agent、MCP / Skill、Java 接入、项目练习、评估、安全、复习问答和官方资料。
+
+实战主线是用 Spring Boot 构建 Java 学习助手；文章提供设计、代码示例和分阶段验收，当前静态知识站本身不调用模型，不需要配置 API Key。运行练习代码时需在独立 Java 项目配置依赖与模型服务，并核对对应版本的官方文档。
+
 ---
 
 ## 怎么打开

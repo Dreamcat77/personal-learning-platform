@@ -355,7 +355,9 @@ body {
 
 .article {
   max-width: 820px;
+  min-width: 0;
   width: 100%;
+  overflow-wrap: anywhere;
   background: linear-gradient(180deg, #e9efe7 0%, #e3ebe2 100%);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(90, 120, 100, 0.12);
@@ -703,7 +705,7 @@ body {
   }
 
   .app.has-toc .main-body {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .toc {
