@@ -11,6 +11,269 @@ window.KNOWLEDGE_CATEGORIES = [
 
 window.KNOWLEDGE = [
   {
+    id: "springboot-junit-mockito-basics",
+    category: "Spring Boot 开发",
+    order: 110,
+    title: "JUnit 5 与 Mockito：Service 单元测试基础",
+    summary: "从测试结构、模拟依赖到断言和交互验证，分清单元测试的边界",
+    related: ["springboot-service-crud-tests", "springboot-transaction-propagation", "interview-spring-boot"],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 自动化测试</span>
+      <h1>JUnit 5 与 Mockito：Service 单元测试基础</h1>
+      <p class="lead">在 user-admin 中，Postman 用于手动检查接口；JUnit 5 与 Mockito 则帮助你重复验证 Service 业务逻辑。核心是让 Service 保持真实，把 Mapper 等外部依赖替换为可控的模拟对象。</p>
+
+      <h2 id="unit-tools" data-toc="两个框架的分工">JUnit 5 和 Mockito 各负责什么</h2>
+      <table><thead><tr><th>工具</th><th>职责</th><th>常用写法</th></tr></thead><tbody>
+        <tr><td>JUnit Jupiter（JUnit 5 的编程模型）</td><td>定义测试、生命周期与断言</td><td>@Test、@BeforeEach、assertEquals、assertThrows</td></tr>
+        <tr><td>Mockito</td><td>模拟依赖行为与验证调用</td><td>@Mock、when、thenReturn、verify</td></tr>
+        <tr><td>MockitoExtension</td><td>在 Jupiter 中初始化 Mockito 对象并检查使用情况</td><td>@ExtendWith(MockitoExtension.class)</td></tr>
+      </tbody></table>
+      <pre class="flow">实际业务：UserService → UserMapper → MySQL
+本阶段测试：真实 UserService → 模拟 UserMapper → 人为指定返回值</pre>
+      <p>模拟返回 1 不代表数据库真的新增或删除了一行；测试证明的是 Service 面对该依赖结果时怎样处理。</p>
+
+      <h2 id="unit-setup" data-toc="依赖与运行">测试放在哪里、怎样运行</h2>
+      <p>在 Spring Boot 3.5.x 学习项目中，通常使用由 Boot 管理版本的测试 starter。先检查已有 pom.xml，避免重复声明或混入不兼容的 JUnit 版本。</p>
+      <pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;</code></pre>
+      <pre><code>生产代码：src/main/java/com/example/useradmin/service/UserService.java
+测试代码：src/test/java/com/example/useradmin/service/UserServiceTest.java
+
+./mvnw test
+./mvnw -Dtest=UserServiceTest test
+Windows PowerShell：./mvnw.cmd test</code></pre>
+      <p>命令在独立的 user-admin Java 项目根目录运行；若项目没有 Maven Wrapper，可使用已安装的 mvn。当前知识站是静态页面，没有 Maven 测试工程。</p>
+
+      <h2 id="unit-test-class" data-toc="测试类结构">真实 Service 与模拟依赖怎样组装</h2>
+      <pre><code>import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+    @Mock
+    private UserMapper userMapper;
+
+    @Mock
+    private TransactionService transactionService;
+
+    @InjectMocks
+    private UserService userService;
+}</code></pre>
+      <p>此处省略项目自定义类型的 import。按本阶段回顾，UserService 构造器依赖 UserMapper 和 TransactionService，因此都要准备；实际依赖以你的代码为准。</p>
+      <p><code>@Mock</code> 创建模拟对象，<code>@InjectMocks</code> 尝试创建被测对象并注入依赖。它不是 Spring 依赖注入，不会递归搭建完整对象图；缺失依赖可能导致注入不完整或构造失败。也可以在 @BeforeEach 中显式执行 <code>new UserService(userMapper, transactionService)</code>，让依赖一目了然。</p>
+      <p>不要把被测 UserService 本身也标为 @Mock，否则可能只是在验证你自己设置的模拟返回值。</p>
+
+      <h2 id="unit-aaa" data-toc="四步测试法">准备、模拟、执行、验证</h2>
+      <pre><code>@Test
+void delete_existingUser_returnsOne() {
+    Long id = 1L;                                      // 准备
+    when(userMapper.deleteById(id)).thenReturn(1);       // 模拟
+    int result = userService.delete(id);                // 执行真实业务
+    assertEquals(1, result);                            // 验证结果
+    verify(userMapper).deleteById(id);                  // 验证必要交互
+}</code></pre>
+      <p>这对应常见的 Arrange → Act → Assert。每个测试只描述一个明确场景，数据在本测试中构造，避免依赖其他测试的执行顺序。</p>
+      <p><code>when(...).thenReturn(...)</code> 称为打桩，规定模拟依赖的行为；<code>verify</code> 则检查实际调用有没有发生，两者作用不同。不要为了让测试通过随意增加模拟行为，应先读懂真实执行路径。</p>
+
+      <h2 id="unit-assertions" data-toc="断言与异常">assertThrows 为什么使用 lambda</h2>
+      <pre><code>BusinessException error = assertThrows(
+    BusinessException.class,
+    () -&gt; userService.delete(null)
+);
+assertEquals("ID不能为空", error.getMessage());
+verifyNoInteractions(userMapper);</code></pre>
+      <p><code>() -&gt; ...</code> 把“稍后执行的代码”交给断言，JUnit 执行它并检查异常。没有抛出预期类型就失败；assertThrows 允许该类型的子类，返回实际异常对象，便于继续检查错误码或信息。必须要求精确类型时可了解 assertThrowsExactly。</p>
+      <p><code>assertEquals(expected, actual)</code> 的预期值写在前面。若业务异常有稳定错误码，应按实际 getter 断言错误码；消息变化不一定代表业务行为改变。此处保留学习回顾中的消息以便对照。</p>
+
+      <h2 id="unit-verification" data-toc="调用验证与匹配">什么时候用 verify、never 与 any</h2>
+      <table><thead><tr><th>写法</th><th>含义</th></tr></thead><tbody>
+        <tr><td>verify(mapper).method()</td><td>与 times(1) 等价，验证一次</td></tr>
+        <tr><td>verify(mapper, times(2)).method()</td><td>验证调用两次</td></tr>
+        <tr><td>verify(mapper, never()).update(any(User.class))</td><td>没有以非 null User 参数调用 update</td></tr>
+        <tr><td>verifyNoInteractions(mapper)</td><td>该模拟对象没有发生方法调用</td></tr>
+      </tbody></table>
+      <p><code>any(User.class)</code> 匹配非 null 的 User 参数，不匹配 null；专门验证 null 可用 isNull()。多参数方法若某个参数用了匹配器，其他参数也使用匹配器，例如 <code>method(eq(1L), any(User.class))</code>。</p>
+      <p>普通对象参数的匹配通常依赖 equals；不要默认 Mockito 会逐字段比较所有对象。需要检查转换后的参数内容时，可以使用 ArgumentCaptor。交互验证围绕业务约束，例如“校验失败不能写库”，不必把所有内部调用顺序都锁死。</p>
+
+      <h2 id="unit-boundaries" data-toc="测试范围与下一步">本阶段能证明什么，不能证明什么</h2>
+      <table><thead><tr><th>测试方式</th><th>主要验证</th><th>不直接证明</th></tr></thead><tbody>
+        <tr><td>JUnit + Mockito</td><td>Service 分支、返回值、异常与依赖调用</td><td>SQL 正确、真实事务回滚、HTTP JSON</td></tr>
+        <tr><td>MockMvc Web 层测试</td><td>请求映射、绑定、参数校验、异常响应</td><td>被模拟 Service 的真实逻辑与数据库行为</td></tr>
+        <tr><td>Spring + 测试数据库集成测试</td><td>组件协作、Mapper SQL、事务与数据库约束</td><td>所有生产环境条件都一致</td></tr>
+      </tbody></table>
+      <p>这里没有启动 Spring 容器，@InjectMocks 创建的 Service 不会自动获得 Spring 事务代理。模拟 Mapper 返回值不能验证 @Transactional 或 REQUIRED / REQUIRES_NEW。验证回滚要使用真实事务资源，并避免测试方法自身的自动回滚掩盖业务提交行为。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-service-crud-tests">下一篇：CRUD 正常与异常测试 →</button><button class="jump-link" type="button" data-id="springboot-transaction-propagation">对照：真实事务传播 →</button></p>
+    `,
+  },
+  {
+    id: "springboot-service-crud-tests",
+    category: "Spring Boot 开发",
+    order: 120,
+    title: "UserService CRUD 测试：正常结果与异常分支",
+    summary: "用可控 Mapper 结果覆盖列表、新增、更新、删除，保留真实踩坑与测试进度",
+    related: ["springboot-junit-mockito-basics", "springboot-business-exception", "springboot-user-admin-crud", "interview-spring-boot"],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 项目测试复盘</span>
+      <h1>UserService CRUD 测试：正常结果与异常分支</h1>
+      <p class="lead">根据本阶段学习回顾，CRUD 正常测试已完成，删除与更新异常测试已学习、练习；下一阶段准备进入 MockMvc。下面代码放入上一篇的 UserServiceTest，并按实际项目补充 User、BusinessException 与 List 的 import。</p>
+
+      <h2 id="crud-test-contract" data-toc="先读业务契约">先确定 Service 的真实执行路径</h2>
+      <p>本篇沿用回顾中的方法名 <code>selectALL()</code>、<code>selectById()</code> 和 <code>delete(Long id)</code>。如果你的版本已改成 DTO 或其他命名，同步调整参数与断言，不要混用不同阶段的签名。</p>
+      <pre class="flow">update(user)：参数校验 → 查询用户 → 判断存在 → 执行更新 → 检查行数
+delete(id)：参数校验 → 执行删除 → 检查行数</pre>
+      <p>测试某个分支前，必须让所有前置条件成立。“对象为 null”和“ID 合法但查不到用户”是不同场景。</p>
+
+      <h2 id="crud-test-read-create" data-toc="查询与新增">查询列表与新增成功</h2>
+      <pre><code>@Test
+void list_returnsUsers() {
+    User first = new User();
+    first.setId(1L);
+    first.setUsername("张三");
+    User second = new User();
+    second.setId(2L);
+    second.setUsername("李四");
+    when(userMapper.selectALL()).thenReturn(List.of(first, second));
+
+    List&lt;User&gt; result = userService.list();
+
+    assertNotNull(result);
+    assertEquals(2, result.size());
+    assertEquals("张三", result.get(0).getUsername());
+    assertEquals("李四", result.get(1).getUsername());
+    verify(userMapper).selectALL();
+}
+
+@Test
+void add_returnsAffectedRows() {
+    User user = new User();
+    user.setUsername("superman");
+    user.setAge(21);
+    when(userMapper.insert(user)).thenReturn(1);
+
+    assertEquals(1, userService.add(user));
+    verify(userMapper).insert(user);
+}</code></pre>
+      <p>List.of 创建不可修改的列表，适合这里作为固定样例；如果被测逻辑需要修改集合，按契约准备可修改数据。新增测试验证返回行数，没有证明真实 SQL、自增 ID 或唯一约束生效。</p>
+
+      <h2 id="crud-test-update-success" data-toc="更新成功">更新之前先模拟“用户存在”</h2>
+      <pre><code>@Test
+void update_existingUser_returnsOne() {
+    User request = new User();
+    request.setId(1L);
+    request.setUsername("lili");
+    request.setAge(21);
+    User oldUser = new User();
+    oldUser.setId(1L);
+    oldUser.setAge(18);
+    when(userMapper.selectById(1L)).thenReturn(oldUser);
+    when(userMapper.update(request)).thenReturn(1);
+
+    assertEquals(1, userService.update(request));
+    verify(userMapper).selectById(1L);
+    verify(userMapper).update(request);
+}</code></pre>
+      <p>request 表示本次修改数据，oldUser 表示模拟查询出的既有记录，两者用途不同。若只模拟 update，却没有模拟 selectById，普通对象类型的默认返回通常是 null，业务会提前进入“用户不存在”。</p>
+
+      <h2 id="crud-test-delete" data-toc="删除的三个分支">删除成功、不存在与参数为空</h2>
+      <pre><code>@Test
+void delete_existingUser_returnsOne() {
+    when(userMapper.deleteById(1L)).thenReturn(1);
+    assertEquals(1, userService.delete(1L));
+    verify(userMapper).deleteById(1L);
+}
+
+@Test
+void delete_missingUser_throws() {
+    when(userMapper.deleteById(999L)).thenReturn(0);
+    BusinessException error = assertThrows(BusinessException.class,
+        () -&gt; userService.delete(999L));
+    assertEquals("要删除的用户不存在", error.getMessage());
+    verify(userMapper).deleteById(999L);
+}
+
+@Test
+void delete_nullId_doesNotCallMapper() {
+    BusinessException error = assertThrows(BusinessException.class,
+        () -&gt; userService.delete(null));
+    assertEquals("ID不能为空", error.getMessage());
+    verifyNoInteractions(userMapper);
+}</code></pre>
+      <p>delete 接收 Long，删除无需创建整个 User。ID 为 null 时尚未执行 Mapper，不需要打桩；Mapper 返回 int，必须设置 0 或 1 等整数，不能设置 null。</p>
+
+      <h2 id="crud-test-update-errors" data-toc="更新异常">用户不存在与更新未命中是两个分支</h2>
+      <pre><code>@Test
+void update_missingUser_doesNotWrite() {
+    User request = new User();
+    request.setId(999L);
+    request.setUsername("lili");
+    request.setAge(21);
+    when(userMapper.selectById(999L)).thenReturn(null);
+
+    BusinessException error = assertThrows(BusinessException.class,
+        () -&gt; userService.update(request));
+
+    assertEquals("要修改的用户不存在", error.getMessage());
+    verify(userMapper).selectById(999L);
+    verify(userMapper, never()).update(any(User.class));
+}
+
+@Test
+void update_zeroRows_throwsConflictByCurrentContract() {
+    User request = new User();
+    request.setId(999L);
+    request.setUsername("lili");
+    request.setAge(21);
+    User oldUser = new User();
+    oldUser.setId(999L);
+    oldUser.setAge(18);
+    when(userMapper.selectById(999L)).thenReturn(oldUser);
+    when(userMapper.update(request)).thenReturn(0);
+
+    BusinessException error = assertThrows(BusinessException.class,
+        () -&gt; userService.update(request));
+
+    assertEquals("用户更新失败，请检查数据状态", error.getMessage());
+    verify(userMapper).selectById(999L);
+    verify(userMapper).update(request);
+}</code></pre>
+      <p>学习项目目前把“查到用户但更新返回 0”视为 409 业务冲突。这是当前业务契约，不是 MySQL 的通用结论：UPDATE 返回匹配行数还是实际变更行数受驱动与配置影响，同值更新也可能无变化；还可能涉及并发删除、版本条件未命中等。真实项目应明确“不变”“不存在”和“冲突”的语义。</p>
+
+      <h2 id="crud-test-debug" data-toc="真实踩坑与排错">看到 Mockito 报错先沿执行路径排查</h2>
+      <table><thead><tr><th>现象</th><th>常见原因</th><th>检查方法</th></tr></thead><tbody>
+        <tr><td>想测不存在，却报 ID 非法</td><td>给 update 传了 null</td><td>准备合法 User，让查询返回 null</td></tr>
+        <tr><td>想测更新失败，却报不存在</td><td>缺少前置查询打桩</td><td>先让 selectById 返回 oldUser</td></tr>
+        <tr><td>Wanted but not invoked</td><td>验证的调用未发生或参数不同</td><td>查提前抛错位置、方法名与实际参数</td></tr>
+        <tr><td>未使用的打桩</td><td>分支根本没有执行该调用</td><td>删除无关打桩，避免一律设为 lenient</td></tr>
+        <tr><td>默认返回值误导了测试</td><td>没有命中打桩；int 默认 0，普通对象常为 null</td><td>显式声明关键场景并核对参数</td></tr>
+      </tbody></table>
+      <p>when、真实 Service 调用与 verify 使用的参数应一致。不要为了消除测试红色状态直接修改业务代码或降低断言；先确认预期契约与实际路径。</p>
+
+      <h2 id="crud-test-progress" data-toc="场景与学习进度">本阶段场景矩阵</h2>
+      <table><thead><tr><th>场景</th><th>Mapper 返回</th><th>预期行为</th></tr></thead><tbody>
+        <tr><td>列表 / 新增 / 更新 / 删除正常</td><td>集合 / 1 / 查询命中后返回 1 / 1</td><td>返回约定结果</td></tr>
+        <tr><td>删除不存在</td><td>0</td><td>404 业务异常</td></tr>
+        <tr><td>删除 ID 为空</td><td>不调用</td><td>400 业务异常</td></tr>
+        <tr><td>更新不存在</td><td>查询为 null</td><td>404，不能继续更新</td></tr>
+        <tr><td>查询存在、更新返回 0</td><td>oldUser、0</td><td>按当前契约抛 409</td></tr>
+      </tbody></table>
+      <p>上表按上传回顾整理学习进度，不代表在本静态仓库运行过这些 Java 测试。更新非法 ID、新增异常、列表为空等分支仍可继续补充；未列出的分支不应视为已经全部覆盖。</p>
+
+      <h2 id="crud-test-next-mockmvc" data-toc="下一阶段 MockMvc">下一步验证 Web 层</h2>
+      <p>先从 GET /user/list 开始，用 MockMvc 模拟请求、真实执行 Controller、模拟 Service，再用 andExpect 与 jsonPath 检查状态码和 JSON。逐步增加参数校验失败、404 业务异常和统一异常处理。</p>
+      <p>Spring Boot 3.5.x / Spring Framework 6.2 的 Web 切片测试可使用 @WebMvcTest，并通过 <code>org.springframework.test.context.bean.override.mockito.MockitoBean</code> 替换 Service Bean。它与纯 Mockito 的 @Mock 不同，作用于 Spring 测试上下文；较旧教程可能使用 @MockBean，按项目版本核对。</p>
+      <p>MockMvc 通常不启动真实 HTTP 服务器。Web 切片测试时还要确认全局异常处理、校验和安全配置已按目标加载；单独拿到一个响应不能证明真实数据库或事务链路正确。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">上一篇：测试基础与边界 →</button><button class="jump-link" type="button" data-id="springboot-business-exception">对照：业务异常与行数 →</button><button class="jump-link" type="button" data-id="interview-spring-boot/interview-testing">面试：单元与集成测试 →</button></p>
+    `,
+  },
+  {
     id: "agent-interview",
     category: "AI Agent 智能体",
     order: 130,
@@ -3059,8 +3322,9 @@ public void outer(Long id1, Long id2) {
         <li>分别查看控制台异常和数据库最终状态，HTTP 200/500 不能单独证明事务结果。</li>
         <li>每轮恢复测试数据，只改变一个传播配置，避免实验条件互相干扰。</li>
       </ol>
-      <p>下一阶段适合用 JUnit 5、Mockito 和 MockMvc 把手工实验转成可重复测试，并特别验证事务测试方法自身的自动回滚行为。</p>
+      <p>目前已进入 JUnit 5 与 Mockito 的 Service 单元测试阶段，下一步是 MockMvc Web 层测试。注意：模拟 Mapper 不能验证真实事务；事务集成测试还要特别检查测试方法自身的自动回滚是否掩盖业务行为。</p>
       <p class="jump-row">
+        <button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">下一阶段：JUnit 5 与 Mockito →</button>
         <button class="jump-link" type="button" data-id="springboot-transaction-bean">上一篇：事务回滚与 Bean 代理 →</button>
         <button class="jump-link" type="button" data-id="interview-spring-boot/interview-propagation">面试：事务传播与 rollback-only →</button>
         <button class="jump-link" type="button" data-id="db-isolation-locks">相关：事务隔离与并发锁 →</button>
@@ -3923,6 +4187,8 @@ a.equals(b)  // true：内容相同</code></pre>
       "springboot-business-exception",
       "springboot-transaction-bean",
       "springboot-transaction-propagation",
+      "springboot-junit-mockito-basics",
+      "springboot-service-crud-tests",
       "interceptor-threadlocal",
       "db-isolation-locks",
     ],
@@ -3965,6 +4231,13 @@ a.equals(b)  // true：内容相同</code></pre>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-transaction-propagation">项目实验：事务传播机制 →</button>
       </p>
+
+      <h2 id="interview-testing" data-toc="单元与集成测试">JUnit、Mockito、MockMvc 和集成测试有什么区别？</h2>
+      <blockquote>
+        <p>JUnit 负责组织测试和断言，Mockito 负责模拟依赖及验证调用。Service 单元测试保留真实 Service、模拟 Mapper，验证正常与异常分支。MockMvc 用于测试 Web 请求处理，可配合 Web 切片测试模拟 Service。验证真实 SQL、事务回滚与传播时，需要加载相关 Spring 组件并使用测试数据库；Mockito 的模拟结果不能证明数据库行为。</p>
+      </blockquote>
+      <p><strong>回答思路：</strong>先说测试对象和隔离边界，再举“ID 为空时 Mapper 不应调用”或“用户不存在时不能更新”的例子。@Mock 创建模拟依赖；@InjectMocks 尝试创建被测对象并注入，不等于启动 Spring 容器。assertThrows 验证异常，verify 验证交互，两者不能互相替代。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">基础：测试结构与范围 →</button><button class="jump-link" type="button" data-id="springboot-service-crud-tests">项目：CRUD 测试场景 →</button></p>
 
       <h2 id="interview-business-exception" data-toc="业务异常处理">Spring Boot 中怎样处理业务异常？</h2>
       <blockquote>
