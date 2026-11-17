@@ -11,6 +11,337 @@ window.KNOWLEDGE_CATEGORIES = [
 
 window.KNOWLEDGE = [
   {
+    id: "dev-debug-glossary",
+    category: "学习路线与工具",
+    order: 40,
+    title: "开发名词入门：Debug、断点、日志与构建",
+    summary: "用 user-admin 理解排错与测试术语，学会观察实际执行路径",
+    related: ["what-is-intellij-idea", "dev-workflow-ci", "springboot-junit-mockito-basics"],
+    content: `
+      <span class="article-tag">学习路线与工具 · 开发基础</span>
+      <h1>开发名词入门：Debug、断点、日志与构建</h1>
+      <p class="lead">把名词放进具体场景：数据库中明明有用户，接口却说不存在。你需要复现请求、观察参数和 SQL 结果，再用测试固定正确行为。</p>
+      <h2 id="debug-terms" data-toc="排错术语">从 Bug 到复现</h2>
+      <table><thead><tr><th>词语</th><th>含义与例子</th></tr></thead><tbody>
+        <tr><td>Bug</td><td>行为不符合预期，例如把合法 ID 错误地判为非法</td></tr>
+        <tr><td>Debug / 调试</td><td>观察执行过程，定位问题原因</td></tr>
+        <tr><td>Reproduce / 复现</td><td>通过稳定步骤重新触发问题</td></tr>
+        <tr><td>Exception / 异常</td><td>Java 表达异常情况的机制；按设计抛出的业务异常不一定是 Bug</td></tr>
+        <tr><td>Stack Trace / 异常堆栈</td><td>异常相关的方法调用路径，含文件名和行号</td></tr>
+        <tr><td>IDE</td><td>编辑、构建、运行和调试代码的工具，例如 IDEA</td></tr>
+      </tbody></table>
+      <h2 id="debug-breakpoint" data-toc="断点操作">在查询方法上打一处断点</h2>
+      <pre><code>User user = userMapper.selectById(id);
+if (user == null) {
+    throw new BusinessException(404, "用户不存在");
+}</code></pre>
+      <p>在第一行左侧设置 Breakpoint，用 Debug 模式启动，再用 Postman 请求接口。暂停时看 id，执行查询后看 user，确认错误发生在接参、SQL 还是连接到了错误数据库。</p>
+      <table><thead><tr><th>操作</th><th>作用</th></tr></thead><tbody>
+        <tr><td>Step Over</td><td>执行当前行，通常不进入调用的方法内部</td></tr>
+        <tr><td>Step Into</td><td>进入被调用方法内部</td></tr>
+        <tr><td>Step Out</td><td>执行完当前方法，回到调用位置</td></tr>
+        <tr><td>Resume</td><td>继续执行，直到下一个断点或结束</td></tr>
+        <tr><td>Variables / Watches</td><td>查看变量 / 指定监视表达式</td></tr>
+        <tr><td>Call Stack</td><td>查看当前方法由谁逐层调用而来</td></tr>
+      </tbody></table>
+      <p>快捷键取决于操作系统与 IDEA 键位方案。断点暂停可能影响超时和并发行为，优先在本地或受控测试环境观察。</p>
+      <h2 id="debug-logs" data-toc="日志与堆栈">日志能留下运行证据</h2>
+      <p>Log 是运行事件记录。DEBUG 常用于详细排错，INFO 记录正常重要事件，WARN 表示值得关注的异常情况，ERROR 记录失败；具体级别应遵守项目约定，DEBUG 日志级别和断点 Debug 是两个概念。</p>
+      <p>traceId 用于关联同一次请求的记录。看异常时结合类型、消息、自己项目的调用位置和 Caused by 原因链，不只截最后一行，也不把所有异常都只打印 getMessage 后吞掉。</p>
+      <p>记录必要的操作、耗时和异常上下文，避免把密码、令牌或用户私人数据直接写进日志。把日志交给 AI 分析前也应脱敏。</p>
+      <h2 id="debug-build" data-toc="编译与运行">从代码到程序的词语</h2>
+      <table><thead><tr><th>词语</th><th>含义</th></tr></thead><tbody>
+        <tr><td>Dependency / 依赖</td><td>项目使用的库，如 MyBatis、Mockito</td></tr>
+        <tr><td>Maven</td><td>管理依赖、构建和测试的工具</td></tr>
+        <tr><td>Compile / 编译</td><td>把 Java 源码转换为字节码</td></tr>
+        <tr><td>Build / 构建</td><td>按配置完成编译、资源处理、测试、打包等步骤</td></tr>
+        <tr><td>Package / Artifact</td><td>打包 / 产生的 JAR、镜像等文件</td></tr>
+        <tr><td>Run / Configuration</td><td>启动程序 / 控制端口、连接地址等行为的配置</td></tr>
+      </tbody></table>
+      <p>方法不存在可能在编译时被发现；空指针、SQL 错误可能在运行时出现。编译通过不证明业务结果正确，因此还需要测试。</p>
+      <h2 id="debug-test-vocabulary" data-toc="测试术语">测试中的名字怎么对应</h2>
+      <p>Test Case 是输入、操作和预期结果组成的用例；Assertion 是检查结果的断言；Mock 是可控制的模拟依赖；Stub 是规定依赖调用的响应，例如 when(...).thenReturn(0)。</p>
+      <p>单元测试验证小范围逻辑；集成测试验证组件协作；端到端 E2E 测试覆盖选定的完整用户流程。回归测试的目标是发现修改破坏了旧功能，可以包含这些不同层次。Coverage 覆盖率描述执行到了多少代码或分支，不保证断言充分或需求完整。</p>
+      <h2 id="debug-practice" data-toc="练习闭环">一次排错怎样形成成果</h2>
+      <ol><li>记录输入、预期、实际结果与复现步骤。</li><li>用断点或日志找出第一个偏离预期的位置。</li><li>检查参数、配置和执行路径，提出可验证原因。</li><li>修改后补一个会捕获原问题的测试，再运行相关回归测试。</li></ol>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="dev-workflow-ci">下一篇：AI 开发流程与 CI/CD →</button><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">实践：Service 单元测试 →</button></p>
+    `,
+  },
+  {
+    id: "dev-workflow-ci",
+    category: "学习路线与工具",
+    order: 50,
+    title: "AI 辅助 Java 开发流程：Git、测试、CI/CD 与发布",
+    summary: "把需求、调试、审查与自动检查串起来，分清 CI 和测试类型",
+    related: ["dev-debug-glossary", "springboot-service-crud-tests", "springboot-mockmvc-basics", "agent-learning-roadmap"],
+    content: `
+      <span class="article-tag">学习路线与工具 · 工程工作流</span>
+      <h1>AI 辅助 Java 开发流程：Git、测试、CI/CD 与发布</h1>
+      <p class="lead">以“增加年龄区间分页查询”为例，开发者需要把需求变成可验证、可交付的代码。AI 可以帮助阅读、实现和排错，开发者负责确认契约、审查修改和验证实际结果。</p>
+      <h2 id="workflow-delivery" data-toc="完整开发流程">从需求到发布</h2>
+      <pre class="flow">确认需求与边界 → 阅读现有代码 → 设计接口和数据流
+  ↓
+创建分支 → 开发与 Debug → 本地测试 → Commit / Push
+  ↓
+PR / MR → CI 自动检查 + Code Review → 合并
+  ↓
+部署测试环境 → 验证 → 发布 → 监控与必要的回滚</pre>
+      <p>具体顺序由团队决定。年龄分页需求要明确上下限是否合法、count 与列表条件是否一致、权限和排序等规则，再安排代码和测试。</p>
+      <h2 id="workflow-ai" data-toc="怎样与 AI 协作">让 AI 做一个范围明确的修改</h2>
+      <pre><code>阅读现有用户分页链路，增加 minAge、maxAge 可选参数。
+先说明要修改哪些文件与接口，沿用现有统一响应和异常规范。
+检查 count 和列表查询条件一致，补充边界与非法参数测试。
+完成后说明实际执行了哪些检查，以及未验证的部分。</code></pre>
+      <p>审查 AI 输出时确认业务路径、SQL、错误响应和测试是否合理；测试应来自需求，而不只是重复实现。不要把“建议运行测试”当成已经运行，也不要把生成的“成功”描述当成工具实际结果。</p>
+      <h2 id="workflow-git" data-toc="Git 与审查名词">代码协作术语</h2>
+      <table><thead><tr><th>术语</th><th>意思</th></tr></thead><tbody>
+        <tr><td>Branch</td><td>独立开发某项工作的代码分支</td></tr>
+        <tr><td>Commit / Push</td><td>记录本地修改 / 发送提交到远端</td></tr>
+        <tr><td>PR / MR</td><td>请求把分支修改合入目标分支</td></tr>
+        <tr><td>Code Review</td><td>审查正确性、可维护性和验证证据</td></tr>
+        <tr><td>Merge / Conflict</td><td>合并修改 / 自动合并不能确定如何保留双方改动</td></tr>
+      </tbody></table>
+      <p>提交和推送不等于部署。PR 可以反复补充提交、运行检查并处理审查意见；合并后是否自动发布取决于配置。</p>
+      <h2 id="workflow-ci" data-toc="CI 与流水线">CI 是流程，不是一种测试</h2>
+      <p>CI 是 Continuous Integration，持续集成。提交或 PR 等事件触发自动化检查，通常包含准备环境、编译、测试和打包。JUnit、MockMvc 测试可以成为 CI 的步骤；本地和 CI 可以运行同一组测试。</p>
+      <table><thead><tr><th>名词</th><th>含义</th></tr></thead><tbody>
+        <tr><td>GitHub Actions</td><td>GitHub 的自动化执行平台</td></tr>
+        <tr><td>Workflow / Pipeline</td><td>工作流定义 / 按依赖安排的自动化流程</td></tr>
+        <tr><td>Job / Step</td><td>一组执行任务 / 其中一项操作</td></tr>
+        <tr><td>Runner</td><td>运行检查的机器或执行环境</td></tr>
+        <tr><td>Passed / Failed</td><td>已配置的检查通过 / 至少有检查失败</td></tr>
+      </tbody></table>
+      <p>CI 红色先定位失败步骤：编译、断言、数据库准备、Java 版本或依赖网络都可能失败。绿色只表示配置的检查通过，不能保证没有缺陷，也不代表集成测试一定被运行。</p>
+      <h2 id="workflow-ci-example" data-toc="Java CI 示例">最小 Maven 工作流示意</h2>
+      <p>以下是供独立 user-admin Maven 项目使用的示例，保存为 .github/workflows/java-ci.yml；本知识站没有 Java 工程，本次仅整理教程，没有启用该工作流。</p>
+      <pre><code>name: Java checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Verify
+        run: mvn -B verify</code></pre>
+      <p>Actions 主版本需按项目策略和官方支持情况核对，团队可锁定经审核的提交。verify 会推进 Maven 生命周期，但实际跑哪些测试取决于插件配置；例如 *IT 集成测试通常要配置 Failsafe，不能只靠文件名推断已执行。CI 检查测试报告数量，避免“没有测试却成功”。</p>
+      <p>需要数据库的测试应准备隔离的测试资源与配置；不要连接生产数据库。本地通过而 CI 失败时比较 JDK、时区、配置、依赖与外部服务。</p>
+      <h2 id="workflow-cd" data-toc="CD 与发布名词">检查通过之后怎样交付</h2>
+      <p>Continuous Delivery（持续交付）把版本准备到可发布状态，生产发布可以保留人工确认；Continuous Deployment（持续部署）则在条件满足后自动部署到生产。团队所说的 CD 需要结合具体流程判断。</p>
+      <table><thead><tr><th>术语</th><th>含义</th></tr></thead><tbody>
+        <tr><td>Artifact / Image</td><td>JAR 等构建产物 / 打包应用和运行环境的容器镜像</td></tr>
+        <tr><td>Staging / Production</td><td>预发布环境 / 真实用户使用的生产环境</td></tr>
+        <tr><td>Deploy / Release</td><td>安装运行版本 / 把版本或功能提供给用户，两者可以分开</td></tr>
+        <tr><td>Rollback</td><td>恢复此前版本或状态；应用回滚不会自动逆转数据库结构和外部副作用</td></tr>
+        <tr><td>Monitoring</td><td>观察错误率、延迟、资源与业务指标，发现问题</td></tr>
+      </tbody></table>
+      <h2 id="workflow-practice" data-toc="建议学习顺序">把之前的学习串成闭环</h2>
+      <ol><li>用 Debug 看懂一个 Service 方法执行路径。</li><li>用 JUnit / Mockito 固定正常与异常行为。</li><li>用 MockMvc 验证参数、HTTP 状态和 JSON。</li><li>整理测试数据，学习参数化测试，再补实际数据库集成测试。</li><li>让 CI 自动运行已经能在本地重复执行的检查。</li></ol>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="dev-debug-glossary">先学：Debug 与术语 →</button><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">第一阶段：Service 单元测试 →</button><button class="jump-link" type="button" data-id="springboot-mockmvc-basics">第二阶段：MockMvc →</button></p>
+    `,
+  },
+  {
+    id: "springboot-mockmvc-basics",
+    category: "Spring Boot 开发",
+    order: 130,
+    title: "MockMvc 接口测试：请求、JSON 与 Service 模拟",
+    summary: "WebMvcTest、MockitoBean、GET/POST/PUT 与反序列化参数验证",
+    related: ["springboot-service-crud-tests", "springboot-mockmvc-validation", "springboot-junit-mockito-basics"],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · Controller 测试</span>
+      <h1>MockMvc 接口测试：请求、JSON 与 Service 模拟</h1>
+      <p class="lead">Service 单元测试之后，本阶段用 MockMvc 验证 Controller 的映射、参数绑定和响应。依据上传回顾，GET 列表与单条、POST 新增、PUT 修改的正常场景已编写并运行通过；本文是学习整理，当前静态知识站未执行 Java 测试。</p>
+      <h2 id="mvc-boundary" data-toc="测试边界">真实 Controller，模拟 Service</h2>
+      <pre class="flow">JUnit → MockMvc 模拟请求
+  ↓
+Spring MVC：映射、参数绑定、校验
+  ↓
+真实 Controller → Mockito 模拟的 UserService
+  ↓
+响应序列化 / 异常处理 → HTTP 状态与 JSON 断言</pre>
+      <p>MockMvc 在进程内测试 Spring MVC 请求处理，不需要监听真实 HTTP 端口。Mockito 提供模拟依赖。本篇用 @WebMvcTest 切片加模拟 Service，不验证真实 SQL 和 Service 业务逻辑；MockMvc 也可以用于其他测试配置，不能把工具本身等同于一种固定测试范围。</p>
+      <h2 id="mvc-setup" data-toc="测试类配置">Spring Boot 3.5.6 下的配置</h2>
+      <pre><code>import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+
+@WebMvcTest(UserController.class)
+class UserControllerTest {
+    @Autowired MockMvc mockMvc;
+    @Autowired ObjectMapper objectMapper;
+    @MockitoBean UserService userService;
+    // 将后面的测试方法放入这里；补充项目 User 等类型的 import
+}</code></pre>
+      <p>@WebMvcTest 加载相关 Web 测试组件；@MockitoBean 在 Spring 测试上下文中创建或替换模拟 Bean。单独 @Mock 只创建 Mockito 对象，不会自动把它注册为 Controller 的 Spring 依赖。这里采用 Spring Framework 6.2 的 @MockitoBean，旧版本教程可能使用 @MockBean。</p>
+      <p>ObjectMapper 把 Java 对象序列化为请求 JSON；Controller 接收请求时又会反序列化成新对象。测试类放在 user-admin 的 src/test/java 中，使用项目已有的测试依赖。</p>
+      <h2 id="mvc-requests" data-toc="请求与响应 API">一条请求怎样表达</h2>
+      <table><thead><tr><th>写法</th><th>含义</th></tr></thead><tbody>
+        <tr><td>perform(get/post/put/delete(...))</td><td>构造并执行模拟请求</td></tr>
+        <tr><td>contentType(APPLICATION_JSON)</td><td>声明请求正文是 JSON</td></tr>
+        <tr><td>content(json)</td><td>设置请求正文</td></tr>
+        <tr><td>param("pageNum", "1")</td><td>提供请求参数，区别于 JSON 正文</td></tr>
+        <tr><td>andExpect(status().isOk())</td><td>验证真实 HTTP 响应状态</td></tr>
+        <tr><td>jsonPath("$.data[0].username")</td><td>读取响应 JSON 中第一个用户的名字</td></tr>
+        <tr><td>andDo(print())</td><td>打印模拟请求、处理器与响应用于排错</td></tr>
+      </tbody></table>
+      <p>$ 是 JSON 根对象，$.data.length() 可检查列表长度。请求中的占位符必须填值，例如 get("/user/list/{id}", 1L)。contentType 表达发送的数据格式，accept 表达希望收到的格式。</p>
+      <h2 id="mvc-get" data-toc="GET 列表与单条">列表与单条查询</h2>
+      <pre><code>@Test
+void list_returnsUsers() throws Exception {
+    User first = new User();
+    first.setUsername("lili");
+    User second = new User();
+    second.setUsername("lala");
+    when(userService.list()).thenReturn(java.util.List.of(first, second));
+
+    mockMvc.perform(get("/user/list"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.length()").value(2))
+        .andExpect(jsonPath("$.data[0].username").value("lili"))
+        .andExpect(jsonPath("$.data[1].username").value("lala"));
+    verify(userService).list();
+}
+
+@Test
+void get_existingUser_returnsDetails() throws Exception {
+    User user = new User();
+    user.setId(1L);
+    user.setUsername("lili");
+    user.setAge(21);
+    when(userService.list(1L)).thenReturn(user);
+    mockMvc.perform(get("/user/list/{id}", 1L))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.id").value(1))
+        .andExpect(jsonPath("$.data.username").value("lili"))
+        .andExpect(jsonPath("$.data.age").value(21));
+    verify(userService).list(1L);
+}</code></pre>
+      <p>本阶段沿用实际回顾里的 list() 与 list(Long id) 重载方法以及 /user/list/{id} 路由；其他历史文章里的示例命名不代表当前接口。测试应跟随 Controller 的实际映射。</p>
+      <h2 id="mvc-write" data-toc="POST / PUT 与对象匹配">JSON 绑定后，怎样验证传入 Service 的对象</h2>
+      <pre><code>@Test
+void add_bindsJsonFields() throws Exception {
+    User request = new User();
+    request.setUsername("lili");
+    request.setAge(21);
+    when(userService.add(any(User.class))).thenReturn(1);
+
+    mockMvc.perform(post("/user")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk());
+
+    ArgumentCaptor&lt;User&gt; captor = ArgumentCaptor.forClass(User.class);
+    verify(userService).add(captor.capture());
+    assertEquals("lili", captor.getValue().getUsername());
+    assertEquals(Integer.valueOf(21), captor.getValue().getAge());
+}</code></pre>
+      <p>当 User 没有按字段实现 equals 时，when(add(request)) 可能匹配不到反序列化后的新对象。这里用 any(User.class) 打桩，再捕获实际参数核对字段，避免“打桩很宽但不验证内容”。若 Controller 接收 DTO，则捕获对应 DTO。</p>
+      <p>PUT 正常测试准备合法 ID，使用 put("/user") 和 update(any(User.class))，再捕获参数验证 ID、用户名与年龄。上传回顾中 POST/PUT 正常场景主要验证了 200；完整响应契约还可补充 code 与 data 断言，不能视为已全部覆盖。</p>
+      <h2 id="mvc-exceptions" data-toc="throws 与测试运行">throws Exception 为什么写在测试方法上</h2>
+      <p>JSON 序列化和 MockMvc 操作可能抛出受检异常。throws Exception 声明由调用方处理，避免测试中重复 try-catch；它不会主动抛异常，也不会让异常自动算作测试通过。没有被正确处理或断言的异常通常会让测试失败。</p>
+      <pre><code>./mvnw -Dtest=UserControllerTest test</code></pre>
+      <p>在 user-admin 根目录运行；Windows 可使用 ./mvnw.cmd。下一篇检查失败分支，重点区分校验前拦截与业务调用后抛错。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-service-crud-tests">上一篇：Service 测试 →</button><button class="jump-link" type="button" data-id="springboot-mockmvc-validation">下一篇：校验与异常响应 →</button></p>
+    `,
+  },
+  {
+    id: "springboot-mockmvc-validation",
+    category: "Spring Boot 开发",
+    order: 140,
+    title: "MockMvc 异常测试：参数校验、404 与全局处理",
+    summary: "thenThrow、verifyNoInteractions、HTTP 与业务码、排错及后续学习",
+    related: ["springboot-mockmvc-basics", "springboot-result-validation", "springboot-business-exception", "interview-spring-boot"],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 接口异常测试</span>
+      <h1>MockMvc 异常测试：参数校验、404 与全局处理</h1>
+      <p class="lead">参数不合法应在调用业务前被拦截；业务异常则在 Service 调用后出现。测试不仅检查响应，还要验证请求走了哪条路径。以下方法沿用上一篇 UserControllerTest 的配置与导入，并补充项目 BusinessException 类型。</p>
+      <h2 id="mvc-validation" data-toc="参数校验 400">校验失败时 Service 不应该执行</h2>
+      <pre><code>@Test
+void add_blankUsername_returns400() throws Exception {
+    User request = new User();
+    request.setUsername("   ");
+    request.setAge(21);
+    mockMvc.perform(post("/user")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value("用户名不能为空"));
+    verifyNoInteractions(userService);
+}</code></pre>
+      <p>前提是 Controller 的 @Valid @RequestBody 参数以及字段校验约束已生效，全局处理器按项目约定返回错误 JSON。该路径通常产生 MethodArgumentNotValidException；其他参数位置、校验方式或框架配置可能产生其他异常。</p>
+      <table><thead><tr><th>字符串约束</th><th>null</th><th>空字符串</th><th>全空格</th></tr></thead><tbody>
+        <tr><td>@NotNull</td><td>失败</td><td>通过</td><td>通过</td></tr>
+        <tr><td>@NotEmpty</td><td>失败</td><td>失败</td><td>通过</td></tr>
+        <tr><td>@NotBlank</td><td>失败</td><td>失败</td><td>失败</td></tr>
+      </tbody></table>
+      <p>此表针对字符串。年龄 Integer 用 @NotNull 配合数值范围约束，不能套用 @NotBlank。每个用例只破坏一个目标条件，其他字段保持合法，避免多个错误的返回顺序影响断言。</p>
+      <h2 id="mvc-business-error" data-toc="业务异常 404">用 thenThrow 模拟业务异常</h2>
+      <pre><code>@Test
+void get_missingUser_returns404() throws Exception {
+    when(userService.list(999L))
+        .thenThrow(new BusinessException(404, "用户不存在"));
+    mockMvc.perform(get("/user/list/{id}", 999L))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.code").value(404))
+        .andExpect(jsonPath("$.message").value("用户不存在"));
+    verify(userService).list(999L);
+}</code></pre>
+      <p>thenReturn 提供普通返回值，thenThrow 让模拟方法真正抛异常。返回 User 的方法不能用 thenReturn(BusinessException) 模拟失败。若依赖方法返回 void，可使用 doThrow(...).when(mock).method(...)。</p>
+      <h2 id="mvc-delete-error" data-toc="DELETE 请求契约">删除异常测试必须匹配当前接口</h2>
+      <pre><code>@Test
+void delete_missingUser_returns404() throws Exception {
+    User request = new User();
+    request.setId(999L);
+    when(userService.delete(999L))
+        .thenThrow(new BusinessException(404, "要删除的用户不存在"));
+    mockMvc.perform(delete("/user/delete")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.code").value(404))
+        .andExpect(jsonPath("$.message").value("要删除的用户不存在"));
+    verify(userService).delete(999L);
+}</code></pre>
+      <p>本阶段文档记录的是 DELETE /user/delete 携带 JSON，由 Controller 提取 ID，再调用 delete(Long)。如果以后改成 DELETE /user/{id}，应同步改请求构造。DELETE 正文在不同客户端和中间设施中的支持需验证；学习复盘保留当前真实契约，不擅自替换项目路由。</p>
+      <h2 id="mvc-status" data-toc="HTTP 状态与业务码">404 出现在哪里很重要</h2>
+      <p>status().isNotFound() 检查 HTTP 响应状态；jsonPath("$.code").value(404) 检查响应体字段。当前项目让两者数值相同，但它们属于不同层面。只设置 Result.code=404 而 HTTP 仍是 200，两个断言不会都通过。</p>
+      <p>全局处理器使用 ResponseEntity.status(...).body(...) 同时决定状态与正文。如果业务码不是合法 HTTP 状态码，要显式映射，不应把任意内部业务编号直接传入 status。</p>
+      <h2 id="mvc-debug" data-toc="失败排查">从请求打印开始定位</h2>
+      <pre><code>mockMvc.perform(get("/user/list/{id}", 999L))
+    .andDo(print())
+    .andExpect(status().isNotFound());</code></pre>
+      <table><thead><tr><th>现象</th><th>优先排查</th></tr></thead><tbody>
+        <tr><td>路径变量无法展开</td><td>是否给 {id} 提供实际值</td></tr>
+        <tr><td>404 / 405</td><td>是否匹配 Controller 路由、请求方法；404 是映射失败还是业务异常</td></tr>
+        <tr><td>415 / 400</td><td>Content-Type、JSON 格式、参数绑定与校验</td></tr>
+        <tr><td>401 / 403，Controller 未执行</td><td>安全过滤器、认证用户、CSRF；按真实配置准备测试，不随意关闭全部过滤器</td></tr>
+        <tr><td>异常未转成预期 JSON</td><td>全局 Advice 是否被切片扫描；必要时显式 @Import 对应处理器</td></tr>
+        <tr><td>Service 返回默认值</td><td>打桩参数与反序列化对象是否匹配</td></tr>
+      </tbody></table>
+      <p>参数校验失败用 verifyNoInteractions；由 Service 抛出的业务异常用 verify 检查调用。若测试用的是 standaloneSetup，还需要自己配置相关 Advice、校验器等，不应默认与 @WebMvcTest 的配置完全相同。</p>
+      <h2 id="mvc-progress" data-toc="已完成与下一步">本阶段范围和后续路线</h2>
+      <p>根据上传回顾：GET 列表/单条、POST/PUT 正常场景，POST 用户名为空或全空格、年龄 null，PUT 用户名全空格，以及查询/删除不存在的 404 响应已完成。范围之外仍需按实际业务补充，不能据此声称全接口或生产链路都已覆盖。</p>
+      <ol><li>@BeforeEach / @AfterEach：整理每个测试的准备与清理，避免共享可变状态。</li><li>@ParameterizedTest 配合 @ValueSource / @CsvSource：用多组数据覆盖同一规则；null 和空字符串可进一步了解 @NullSource / @EmptySource。</li><li>assertAll：一组普通断言尽可能都执行并汇总失败。</li><li>@SpringBootTest 与测试数据库：验证实际组件、SQL 和事务。</li><li>把本地可重复的测试接入 CI，并确认集成测试确实被执行。</li></ol>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-basics">上一篇：请求与 JSON →</button><button class="jump-link" type="button" data-id="dev-workflow-ci">下一步：开发流程与 CI →</button><button class="jump-link" type="button" data-id="dev-debug-glossary">排错基础：Debug 与日志 →</button></p>
+    `,
+  },
+  {
     id: "springboot-junit-mockito-basics",
     category: "Spring Boot 开发",
     order: 110,
@@ -123,7 +454,7 @@ verifyNoInteractions(userMapper);</code></pre>
     content: `
       <span class="article-tag">Spring Boot 开发 · 项目测试复盘</span>
       <h1>UserService CRUD 测试：正常结果与异常分支</h1>
-      <p class="lead">根据本阶段学习回顾，CRUD 正常测试已完成，删除与更新异常测试已学习、练习；下一阶段准备进入 MockMvc。下面代码放入上一篇的 UserServiceTest，并按实际项目补充 User、BusinessException 与 List 的 import。</p>
+      <p class="lead">本篇保留 Service 阶段的 CRUD 正常与删除、更新异常测试复盘；后续 MockMvc 核心场景已完成，见文末 Web 层测试入口。下面代码放入上一篇的 UserServiceTest，并按实际项目补充 User、BusinessException 与 List 的 import。</p>
 
       <h2 id="crud-test-contract" data-toc="先读业务契约">先确定 Service 的真实执行路径</h2>
       <p>本篇沿用回顾中的方法名 <code>selectALL()</code>、<code>selectById()</code> 和 <code>delete(Long id)</code>。如果你的版本已改成 DTO 或其他命名，同步调整参数与断言，不要混用不同阶段的签名。</p>
@@ -266,10 +597,9 @@ void update_zeroRows_throwsConflictByCurrentContract() {
       </tbody></table>
       <p>上表按上传回顾整理学习进度，不代表在本静态仓库运行过这些 Java 测试。更新非法 ID、新增异常、列表为空等分支仍可继续补充；未列出的分支不应视为已经全部覆盖。</p>
 
-      <h2 id="crud-test-next-mockmvc" data-toc="下一阶段 MockMvc">下一步验证 Web 层</h2>
-      <p>先从 GET /user/list 开始，用 MockMvc 模拟请求、真实执行 Controller、模拟 Service，再用 andExpect 与 jsonPath 检查状态码和 JSON。逐步增加参数校验失败、404 业务异常和统一异常处理。</p>
-      <p>Spring Boot 3.5.x / Spring Framework 6.2 的 Web 切片测试可使用 @WebMvcTest，并通过 <code>org.springframework.test.context.bean.override.mockito.MockitoBean</code> 替换 Service Bean。它与纯 Mockito 的 @Mock 不同，作用于 Spring 测试上下文；较旧教程可能使用 @MockBean，按项目版本核对。</p>
-      <p>MockMvc 通常不启动真实 HTTP 服务器。Web 切片测试时还要确认全局异常处理、校验和安全配置已按目标加载；单独拿到一个响应不能证明真实数据库或事务链路正确。</p>
+      <h2 id="crud-test-next-mockmvc" data-toc="衔接 MockMvc">衔接已完成的 Web 层测试</h2>
+      <p>后续已完成 GET 列表/单条、POST/PUT 正常请求，以及参数校验和查询/删除 404 场景。配置、请求样例和排错已整理为两篇独立文章；当前后续计划为 JUnit 生命周期、参数化测试、assertAll 和集成测试。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-basics">接着学：MockMvc 请求与 JSON →</button><button class="jump-link" type="button" data-id="springboot-mockmvc-validation">复习：参数校验与异常响应 →</button></p>
       <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">上一篇：测试基础与边界 →</button><button class="jump-link" type="button" data-id="springboot-business-exception">对照：业务异常与行数 →</button><button class="jump-link" type="button" data-id="interview-spring-boot/interview-testing">面试：单元与集成测试 →</button></p>
     `,
   },
@@ -3322,7 +3652,7 @@ public void outer(Long id1, Long id2) {
         <li>分别查看控制台异常和数据库最终状态，HTTP 200/500 不能单独证明事务结果。</li>
         <li>每轮恢复测试数据，只改变一个传播配置，避免实验条件互相干扰。</li>
       </ol>
-      <p>目前已进入 JUnit 5 与 Mockito 的 Service 单元测试阶段，下一步是 MockMvc Web 层测试。注意：模拟 Mapper 不能验证真实事务；事务集成测试还要特别检查测试方法自身的自动回滚是否掩盖业务行为。</p>
+      <p>后续已完成 JUnit 5 / Mockito 的 Service 测试及 MockMvc 核心 Web 测试，当前计划是 JUnit 进阶与集成测试。模拟 Mapper 或 Service 不能验证真实事务；事务集成测试还要检查测试方法自身的自动回滚是否掩盖业务行为。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">下一阶段：JUnit 5 与 Mockito →</button>
         <button class="jump-link" type="button" data-id="springboot-transaction-bean">上一篇：事务回滚与 Bean 代理 →</button>
@@ -4238,6 +4568,8 @@ a.equals(b)  // true：内容相同</code></pre>
       </blockquote>
       <p><strong>回答思路：</strong>先说测试对象和隔离边界，再举“ID 为空时 Mapper 不应调用”或“用户不存在时不能更新”的例子。@Mock 创建模拟依赖；@InjectMocks 尝试创建被测对象并注入，不等于启动 Spring 容器。assertThrows 验证异常，verify 验证交互，两者不能互相替代。</p>
       <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">基础：测试结构与范围 →</button><button class="jump-link" type="button" data-id="springboot-service-crud-tests">项目：CRUD 测试场景 →</button></p>
+      <p><strong>MockMvc 追问：</strong>@WebMvcTest 加载 Web 切片，@MockitoBean 提供 Spring 上下文中的模拟依赖。参数校验失败应验证 Service 未被调用；Service 抛业务异常用 thenThrow，并检查 HTTP 状态与 JSON 业务码。前者和后者需要不同的交互断言。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-validation">实战：校验与全局异常测试 →</button></p>
 
       <h2 id="interview-business-exception" data-toc="业务异常处理">Spring Boot 中怎样处理业务异常？</h2>
       <blockquote>
@@ -4862,6 +5194,8 @@ public class Application {
     title: "Java 后端学习路线：先掌握 CRUD",
     summary: "从 Java、MySQL 到 Spring Boot 项目的阶段式学习顺序",
     related: [
+      "dev-debug-glossary",
+      "dev-workflow-ci",
       "springboot-fullstack-roadmap",
       "java-object-create-dto",
       "java-spring-annotations",
