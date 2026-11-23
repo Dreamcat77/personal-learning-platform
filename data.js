@@ -265,8 +265,8 @@ void add_bindsJsonFields() throws Exception {
     category: "Spring Boot 开发",
     order: 140,
     title: "MockMvc 异常测试：参数校验、404 与全局处理",
-    summary: "thenThrow、verifyNoInteractions、HTTP 与业务码、排错及后续学习",
-    related: ["springboot-mockmvc-basics", "springboot-result-validation", "springboot-business-exception", "interview-spring-boot"],
+    summary: "覆盖校验 400、业务 404／409、系统异常 500 与删除返回 0",
+    related: ["springboot-mockmvc-basics", "springboot-mockmvc-pagination", "springboot-result-validation", "springboot-business-exception", "interview-spring-boot"],
     content: `
       <span class="article-tag">Spring Boot 开发 · 接口异常测试</span>
       <h1>MockMvc 异常测试：参数校验、404 与全局处理</h1>
@@ -291,7 +291,7 @@ void add_blankUsername_returns400() throws Exception {
         <tr><td>@NotBlank</td><td>失败</td><td>失败</td><td>失败</td></tr>
       </tbody></table>
       <p>此表针对字符串。年龄 Integer 用 @NotNull 配合数值范围约束，不能套用 @NotBlank。每个用例只破坏一个目标条件，其他字段保持合法，避免多个错误的返回顺序影响断言。</p>
-      <h2 id="mvc-business-error" data-toc="业务异常 404">用 thenThrow 模拟业务异常</h2>
+      <h2 id="mvc-business-error" data-toc="业务异常 404／409">用 thenThrow 模拟业务异常</h2>
       <pre><code>@Test
 void get_missingUser_returns404() throws Exception {
     when(userService.list(999L))
@@ -303,9 +303,10 @@ void get_missingUser_returns404() throws Exception {
     verify(userService).list(999L);
 }</code></pre>
       <p>thenReturn 提供普通返回值，thenThrow 让模拟方法真正抛异常。返回 User 的方法不能用 thenReturn(BusinessException) 模拟失败。若依赖方法返回 void，可使用 doThrow(...).when(mock).method(...)。</p>
+      <p>删除因当前状态不允许而发生业务冲突时，用合法的 ID 和请求体，模拟 <code>userService.delete(id)</code> 抛出 <code>new BusinessException(409, "用户当前状态不允许删除")</code>。分别断言 <code>status().isConflict()</code>、<code>$.code</code> 为 409、<code>$.message</code> 为约定提示，再验证 Service 收到该 ID。</p>
       <h2 id="mvc-delete-error" data-toc="DELETE 请求契约">删除异常测试必须匹配当前接口</h2>
       <pre><code>@Test
-void delete_missingUser_returns404() throws Exception {
+void delete_serviceThrowsNotFound_returns404() throws Exception {
     User request = new User();
     request.setId(999L);
     when(userService.delete(999L))
@@ -318,10 +319,47 @@ void delete_missingUser_returns404() throws Exception {
         .andExpect(jsonPath("$.message").value("要删除的用户不存在"));
     verify(userService).delete(999L);
 }</code></pre>
-      <p>本阶段文档记录的是 DELETE /user/delete 携带 JSON，由 Controller 提取 ID，再调用 delete(Long)。如果以后改成 DELETE /user/{id}，应同步改请求构造。DELETE 正文在不同客户端和中间设施中的支持需验证；学习复盘保留当前真实契约，不擅自替换项目路由。</p>
+      <p>此前的 404 用例模拟 Service 抛出异常。最新复盘还记录了另一条路径：Service 正常返回受影响行数 0 时，Controller 按当前契约返回 HTTP 200 和 <code>Result.success("用户不存在")</code>。两个用例分别用 <code>thenThrow</code> 和 <code>thenReturn</code> 触发不同分支。</p>
+      <pre><code>@Test
+void delete_zeroRows_returns200() throws Exception {
+    User request = new User();
+    request.setId(999L);
+    when(userService.delete(999L)).thenReturn(0);
+    mockMvc.perform(delete("/user/delete")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value("用户不存在"));
+    verify(userService).delete(999L);
+}</code></pre>
+      <p>两个示例沿用复盘中的 DELETE /user/delete JSON 请求。若项目改为 DELETE /user/{id}，测试要同步切换为路径变量。</p>
       <h2 id="mvc-status" data-toc="HTTP 状态与业务码">404 出现在哪里很重要</h2>
       <p>status().isNotFound() 检查 HTTP 响应状态；jsonPath("$.code").value(404) 检查响应体字段。当前项目让两者数值相同，但它们属于不同层面。只设置 Result.code=404 而 HTTP 仍是 200，两个断言不会都通过。</p>
       <p>全局处理器使用 ResponseEntity.status(...).body(...) 同时决定状态与正文。如果业务码不是合法 HTTP 状态码，要显式映射，不应把任意内部业务编号直接传入 status。</p>
+      <h2 id="mvc-advice" data-toc="Advice 与系统异常 500">用全局处理器统一响应</h2>
+      <p><code>@RestControllerAdvice</code> 集中处理 MVC 请求中的异常。参数校验处理器可从 <code>MethodArgumentNotValidException.getBindingResult()</code> 读取一个 <code>FieldError</code>，用其 <code>getDefaultMessage()</code> 构造 400 响应。当前实现只返回一条错误，测试应一次触发一条目标约束；类型转换错误的提示另按接口契约断言。</p>
+      <p>业务异常由专门的处理方法映射为 404 或 409。对未预期的异常，在处理器中记录堆栈，再返回通用提示。下面使用复盘中的 <code>Result.error1</code> 工厂方法。</p>
+      <pre><code>private static final Logger log =
+        LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+@ExceptionHandler(Exception.class)
+public ResponseEntity&lt;Result&lt;Void&gt;&gt; handleException(Exception e) {
+    log.error("系统发生未处理异常", e);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(Result.&lt;Void&gt;error1("服务器内部错误"));
+}</code></pre>
+      <p>同一 Advice 内优先匹配更具体的处理方法。加入兜底时应回归已约定的 HTTP 4xx，例如请求体无法解析时的 400，确保它们仍由对应的处理逻辑保留原状态。</p>
+      <pre><code>@Test
+void get_unexpectedServiceFailure_returns500() throws Exception {
+    when(userService.list(1L))
+        .thenThrow(new RuntimeException("数据库连接失败"));
+    mockMvc.perform(get("/user/list/{id}", 1L))
+        .andExpect(status().isInternalServerError())
+        .andExpect(jsonPath("$.message").value("服务器内部错误"));
+    verify(userService).list(1L);
+}</code></pre>
+      <p>这个用例验证对外状态和提示。若要验证整个响应没有泄露内部信息，还可检查异常详情字段或响应全文；日志内容需要单独验证。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-result-validation/result-exception">对照：参数校验处理器 →</button><button class="jump-link" type="button" data-id="springboot-business-exception/business-handler">对照：业务异常处理器 →</button></p>
       <h2 id="mvc-debug" data-toc="失败排查">从请求打印开始定位</h2>
       <pre><code>mockMvc.perform(get("/user/list/{id}", 999L))
     .andDo(print())
@@ -336,9 +374,113 @@ void delete_missingUser_returns404() throws Exception {
       </tbody></table>
       <p>参数校验失败用 verifyNoInteractions；由 Service 抛出的业务异常用 verify 检查调用。若测试用的是 standaloneSetup，还需要自己配置相关 Advice、校验器等，不应默认与 @WebMvcTest 的配置完全相同。</p>
       <h2 id="mvc-progress" data-toc="已完成与下一步">本阶段范围和后续路线</h2>
-      <p>根据上传回顾：GET 列表/单条、POST/PUT 正常场景，POST 用户名为空或全空格、年龄 null，PUT 用户名全空格，以及查询/删除不存在的 404 响应已完成。范围之外仍需按实际业务补充，不能据此声称全接口或生产链路都已覆盖。</p>
-      <ol><li>@BeforeEach / @AfterEach：整理每个测试的准备与清理，避免共享可变状态。</li><li>@ParameterizedTest 配合 @ValueSource / @CsvSource：用多组数据覆盖同一规则；null 和空字符串可进一步了解 @NullSource / @EmptySource。</li><li>assertAll：一组普通断言尽可能都执行并汇总失败。</li><li>@SpringBootTest 与测试数据库：验证实际组件、SQL 和事务。</li><li>把本地可重复的测试接入 CI，并确认集成测试确实被执行。</li></ol>
-      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-basics">上一篇：请求与 JSON →</button><button class="jump-link" type="button" data-id="dev-workflow-ci">下一步：开发流程与 CI →</button><button class="jump-link" type="button" data-id="dev-debug-glossary">排错基础：Debug 与日志 →</button></p>
+      <p>根据学习复盘，已覆盖新增与更新校验、业务 404／409 和未预期异常的 500 响应。本知识站整理的是独立 user-admin 项目的测试记录和示例。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-basics">上一篇：请求与 JSON →</button><button class="jump-link" type="button" data-id="springboot-mockmvc-pagination">下一篇：分页查询与 DTO 绑定 →</button><button class="jump-link" type="button" data-id="dev-debug-glossary">排错基础：Debug 与日志 →</button></p>
+    `,
+  },
+  {
+    id: "springboot-mockmvc-pagination",
+    category: "Spring Boot 开发",
+    order: 150,
+    title: "MockMvc 进阶测试：分页查询与 DTO 参数绑定",
+    summary: "验证 GET 查询参数、分页 JSON、默认值、年龄区间与类型转换",
+    related: ["springboot-mockmvc-basics", "springboot-mockmvc-validation", "springboot-multi-condition-query"],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · Controller 测试</span>
+      <h1>MockMvc 进阶测试：分页查询与 DTO 参数绑定</h1>
+      <p class="lead">在 user-admin 的 UserControllerTest 中，用真实 Controller 和模拟的 UserService 检查两件事：分页查询条件是否正确传入 Service，返回的分页 JSON 是否符合接口约定。</p>
+
+      <h2 id="mvc-page-contract" data-toc="查询条件与结果">从 DTO 到分页响应</h2>
+      <pre><code>@GetMapping("/user/list/page")
+public Result&lt;PageResult&lt;User&gt;&gt; page(
+        @Valid @ModelAttribute UserPageQueryDTO dto) {
+    PageResult&lt;User&gt; result = userService.page(dto);
+    return Result.success("查询成功", result);
+}</code></pre>
+      <ul>
+        <li><code>UserPageQueryDTO</code> 保存输入条件：pageNum、pageSize、username、minAge 和 maxAge。</li>
+        <li><code>PageResult&lt;User&gt;</code> 保存输出：页码、每页条数、符合条件的总数 total，以及当前页的 <code>List&lt;User&gt; records</code>。</li>
+        <li>外层 <code>Result</code> 包装 code、message 与 data，所以 <code>$.data.records[0].username</code> 指向当前页第一条记录的用户名。</li>
+      </ul>
+      <p><code>@ModelAttribute</code> 按属性名绑定请求参数，并把字符串转换为目标类型。用 <code>.param("pageNum", "2")</code> 模拟 GET 查询参数。测试 POST／PUT 的 JSON 请求时，用 <code>.content()</code> 设置正文，再用 <code>.contentType()</code> 声明格式。</p>
+      <p>测试沿用 <code>@WebMvcTest(UserController.class)</code> 和 <code>@MockitoBean UserService</code>。它覆盖 MVC 绑定、校验和响应，真实 SQL、COUNT 口径及分页顺序需另用数据库集成测试验证。</p>
+
+      <h2 id="mvc-page-success" data-toc="正常分页与多条件">一次测试同时核对 DTO 和 JSON</h2>
+      <p>示例沿用现有 <code>UserControllerTest</code> 的配置和静态导入，并使用 <code>java.util.List</code> 与项目中的 DTO、分页结果类。</p>
+      <pre><code>@Test
+void page_withFilters_bindsDtoAndReturnsPage() throws Exception {
+    User user = new User();
+    user.setId(2L);
+    user.setUsername("gege");
+    user.setAge(22);
+
+    PageResult&lt;User&gt; page = new PageResult&lt;&gt;();
+    page.setPageNum(2);
+    page.setPageSize(20);
+    page.setTotal(21L);
+    page.setRecords(List.of(user));
+    when(userService.page(any(UserPageQueryDTO.class))).thenReturn(page);
+
+    mockMvc.perform(get("/user/list/page")
+            .param("pageNum", "2")
+            .param("pageSize", "20")
+            .param("username", "gege")
+            .param("minAge", "18")
+            .param("maxAge", "30"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.pageNum").value(2))
+        .andExpect(jsonPath("$.data.pageSize").value(20))
+        .andExpect(jsonPath("$.data.total").value(21))
+        .andExpect(jsonPath("$.data.records.length()").value(1))
+        .andExpect(jsonPath("$.data.records[0].username").value("gege"));
+
+    verify(userService).page(argThat(dto -&gt; dto != null
+        &amp;&amp; Integer.valueOf(2).equals(dto.getPageNum())
+        &amp;&amp; Integer.valueOf(20).equals(dto.getPageSize())
+        &amp;&amp; "gege".equals(dto.getUsername())
+        &amp;&amp; Integer.valueOf(18).equals(dto.getMinAge())
+        &amp;&amp; Integer.valueOf(30).equals(dto.getMaxAge())));
+}</code></pre>
+      <p><code>any(UserPageQueryDTO.class)</code> 匹配该类型的任意非 null 实例，用于打桩。无类型的 <code>any()</code> 也匹配 null。<code>argThat()</code> 用 Lambda 检查字段，<code>verify(mock)</code> 默认验证一次。使用常量调用 <code>equals()</code> 能按值比较并安全处理字段为 null 的情况。</p>
+      <p>模拟的分页结果来自 <code>thenReturn(page)</code>，所以单看 JSON 无法证明请求参数绑定正确。若 <code>data</code> 为 null，检查是否打桩了 Controller 实际调用的 <code>page(dto)</code>，以及参数是否命中匹配器。</p>
+
+      <h2 id="mvc-page-defaults" data-toc="默认值">请求省略分页参数时检查实际入参</h2>
+      <p>当前 DTO 初始化 pageNum 为 1、pageSize 为 10。请求省略字段时，绑定会保留这两个初始值。把以下请求与验证放在独立用例中，并为模拟 Service 准备一份第一页的返回结果。</p>
+      <pre><code>mockMvc.perform(get("/user/list/page"))
+    .andExpect(status().isOk());
+
+verify(userService).page(argThat(dto -&gt; dto != null
+    &amp;&amp; Integer.valueOf(1).equals(dto.getPageNum())
+    &amp;&amp; Integer.valueOf(10).equals(dto.getPageSize())));</code></pre>
+      <p>省略与显式传空字符串是不同场景。若接口允许客户端提交空字符串，为其单独写用例并按绑定规则断言。</p>
+
+      <h2 id="mvc-page-invalid" data-toc="范围校验与类型转换">同样是 400，先定位失败阶段</h2>
+      <table><thead><tr><th>输入</th><th>失败阶段</th><th>主要断言</th></tr></thead><tbody>
+        <tr><td>pageNum=0</td><td>成功转换为整数，违反 @Min(1)</td><td>HTTP 400、约定的校验提示、Service 未调用</td></tr>
+        <tr><td>pageSize=5 或 101</td><td>违反 @Min(10) 或 @Max(100)</td><td>HTTP 400、Service 未调用。10 与 100 是合法边界</td></tr>
+        <tr><td>minAge=30、maxAge=18</td><td>违反 @AssertTrue 跨字段约束</td><td>HTTP 400、Service 未调用</td></tr>
+        <tr><td>pageNum=abc</td><td>字符串无法转换为 Integer</td><td>HTTP 400、Service 未调用。错误文案按实际契约另测</td></tr>
+      </tbody></table>
+      <pre><code>@Test
+void page_zeroPageNum_returns400() throws Exception {
+    mockMvc.perform(get("/user/list/page").param("pageNum", "0"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value("页码必须大于等于1"));
+    verifyNoInteractions(userService);
+}</code></pre>
+      <p>其余非法场景可沿用同一结构，每次只破坏目标条件。排查类型转换错误时可用 <code>.andDo(print())</code> 查看解析出的异常和响应。</p>
+
+      <h2 id="mvc-page-age-range" data-toc="年龄区间与拼写排错">缺少一端时允许单边筛选</h2>
+      <pre><code>@AssertTrue(message = "最小值不能比最大值大")
+public boolean isAgeRangeValid() {
+    return minAge == null || maxAge == null || minAge &lt;= maxAge;
+}</code></pre>
+      <p>上下限都存在时要求下限 ≤ 上限，等值合法。曾把 <code>minAge</code> 写成 <code>mixAge</code>，默认绑定忽略了未知字段，导致 minAge 仍为 null，跨字段校验短路通过。预期 400 却进入了 Service 时，优先核对请求参数名与实际 DTO 字段。</p>
+      <p>复盘中年龄使用 <code>@Min(0)</code>，因此 0 合法。若提示写成“不能小于等于 0”，应按需求统一约束和文案：允许 0 用“不能小于 0”，要求正数用 <code>@Min(1)</code>。</p>
+
+      <h2 id="mvc-page-progress" data-toc="学习进度与下一步">本阶段进度</h2>
+      <p>学习复盘记录了正常分页、多条件、默认值、页码和条数越界、年龄区间及类型转换测试。下一步用 <code>@BeforeEach</code>／<code>@AfterEach</code> 整理准备和清理，用 <code>@ParameterizedTest</code> 配合 <code>@ValueSource</code> 或 <code>@CsvSource</code> 覆盖边界，用 <code>ArgumentCaptor</code> 和 <code>assertAll</code> 检查多字段入参，再进入 <code>@SpringBootTest</code> 与测试数据库。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-validation/mvc-advice">复习：全局异常处理 →</button><button class="jump-link" type="button" data-id="springboot-multi-condition-query">对照：MyBatis 多条件查询 →</button><button class="jump-link" type="button" data-id="dev-workflow-ci">后续：开发流程与 CI →</button></p>
     `,
   },
   {
@@ -598,8 +740,8 @@ void update_zeroRows_throwsConflictByCurrentContract() {
       <p>上表按上传回顾整理学习进度，不代表在本静态仓库运行过这些 Java 测试。更新非法 ID、新增异常、列表为空等分支仍可继续补充；未列出的分支不应视为已经全部覆盖。</p>
 
       <h2 id="crud-test-next-mockmvc" data-toc="衔接 MockMvc">衔接已完成的 Web 层测试</h2>
-      <p>后续已完成 GET 列表/单条、POST/PUT 正常请求，以及参数校验和查询/删除 404 场景。配置、请求样例和排错已整理为两篇独立文章；当前后续计划为 JUnit 生命周期、参数化测试、assertAll 和集成测试。</p>
-      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-basics">接着学：MockMvc 请求与 JSON →</button><button class="jump-link" type="button" data-id="springboot-mockmvc-validation">复习：参数校验与异常响应 →</button></p>
+      <p>后续的 MockMvc 学习记录已覆盖 CRUD 请求、分页 DTO 绑定、参数校验与全局异常响应。按接口场景对照下面的测试写法。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-basics">接着学：MockMvc 请求与 JSON →</button><button class="jump-link" type="button" data-id="springboot-mockmvc-validation">复习：参数校验与异常响应 →</button><button class="jump-link" type="button" data-id="springboot-mockmvc-pagination">进阶：分页查询与 DTO 绑定 →</button></p>
       <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">上一篇：测试基础与边界 →</button><button class="jump-link" type="button" data-id="springboot-business-exception">对照：业务异常与行数 →</button><button class="jump-link" type="button" data-id="interview-spring-boot/interview-testing">面试：单元与集成测试 →</button></p>
     `,
   },
@@ -3385,10 +3527,11 @@ AND age &amp;gt;= #{minAge}</code></pre>
           <tr><td>Postman ENOTFOUND</td><td>URL 的协议、主机和端口</td></tr>
         </tbody>
       </table>
-      <p>下一步可以把多个查询参数封装成 Query DTO，避免方法参数继续增长；数据量扩大后还要评估包含匹配和 offset 分页的性能。</p>
+      <p>后续测试复盘已将 Web 层的分页参数封装为 Query DTO。下面的 MockMvc 篇验证查询条件绑定；数据量扩大后还要评估包含匹配和 offset 分页的性能。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-dynamic-sql-search">上一篇：用户名动态查询 →</button>
         <button class="jump-link" type="button" data-id="springboot-mybatis-pagination">基础：MyBatis 分页 →</button>
+        <button class="jump-link" type="button" data-id="springboot-mockmvc-pagination">实践：验证分页 DTO 绑定 →</button>
         <button class="jump-link" type="button" data-id="interview-mysql-transaction">面试：MySQL 与 SQL 排查 →</button>
       </p>
     `,
