@@ -479,8 +479,123 @@ public boolean isAgeRangeValid() {
       <p>复盘中年龄使用 <code>@Min(0)</code>，因此 0 合法。若提示写成“不能小于等于 0”，应按需求统一约束和文案：允许 0 用“不能小于 0”，要求正数用 <code>@Min(1)</code>。</p>
 
       <h2 id="mvc-page-progress" data-toc="学习进度与下一步">本阶段进度</h2>
-      <p>学习复盘记录了正常分页、多条件、默认值、页码和条数越界、年龄区间及类型转换测试。下一步用 <code>@BeforeEach</code>／<code>@AfterEach</code> 整理准备和清理，用 <code>@ParameterizedTest</code> 配合 <code>@ValueSource</code> 或 <code>@CsvSource</code> 覆盖边界，用 <code>ArgumentCaptor</code> 和 <code>assertAll</code> 检查多字段入参，再进入 <code>@SpringBootTest</code> 与测试数据库。</p>
-      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-validation/mvc-advice">复习：全局异常处理 →</button><button class="jump-link" type="button" data-id="springboot-multi-condition-query">对照：MyBatis 多条件查询 →</button><button class="jump-link" type="button" data-id="dev-workflow-ci">后续：开发流程与 CI →</button></p>
+      <p>学习复盘记录了正常分页、多条件、默认值、页码和条数越界、年龄区间及类型转换测试。后续已将非法页码和条数改写为参数化测试，并用参数捕获和分组断言检查五个分页字段。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-junit-mockito-test-optimization">下一篇：JUnit 5 与 Mockito 测试优化 →</button><button class="jump-link" type="button" data-id="springboot-mockmvc-validation/mvc-advice">复习：全局异常处理 →</button><button class="jump-link" type="button" data-id="springboot-multi-condition-query">对照：MyBatis 多条件查询 →</button><button class="jump-link" type="button" data-id="dev-workflow-ci">后续：开发流程与 CI →</button></p>
+    `,
+  },
+  {
+    id: "springboot-junit-mockito-test-optimization",
+    category: "Spring Boot 开发",
+    order: 160,
+    title: "JUnit 5 与 Mockito 测试优化：参数化测试、参数捕获与多断言",
+    summary: "复用测试数据，批量验证分页边界，集中检查 DTO 字段",
+    related: ["springboot-mockmvc-pagination", "springboot-mockmvc-basics", "springboot-junit-mockito-basics", "springboot-transaction-propagation"],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 自动化测试</span>
+      <h1>JUnit 5 与 Mockito 测试优化：参数化测试、参数捕获与多断言</h1>
+      <p class="lead">在 user-admin 的 CRUD、分页与异常响应测试基础上，复用测试数据的准备逻辑，用多组输入验证同一规则，再捕获 Controller 实际传给 Service 的 DTO。示例沿用 UserControllerTest 的 <code>@WebMvcTest</code> 配置与模拟 UserService，并补充需要的 JUnit 和项目类型导入。</p>
+
+      <h2 id="test-opt-lifecycle" data-toc="测试初始化">用 @BeforeEach 准备每次测试的数据</h2>
+      <pre><code>private User existingUser;
+private User missingUser;
+
+@BeforeEach
+void setUp() {
+    existingUser = new User();
+    existingUser.setId(1L);
+    missingUser = new User();
+    missingUser.setId(999L);
+}
+
+@Test
+void delete_existingUser_returnsSuccess() throws Exception {
+    when(userService.delete(1L)).thenReturn(1);
+
+    mockMvc.perform(delete("/user/delete")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(existingUser)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message").value("删除成功"));
+
+    verify(userService).delete(1L);
+}</code></pre>
+      <p><code>@BeforeEach</code> 在每个普通测试和每个参数化用例执行前各运行一次。这里每次新建两个 User。对象名描述测试场景，实际模拟行为由各用例单独设置。删除返回 0 的用例可以复用 <code>missingUser</code>，并为 999L 单独打桩。</p>
+      <p><code>@BeforeAll</code> 在整个测试类开始时执行一次，默认测试实例生命周期下需声明为 <code>static</code>。使用 <code>@TestInstance(PER_CLASS)</code> 时，可以用实例方法，并需留意不同用例共享的可变字段。</p>
+
+      <h2 id="test-opt-value-source" data-toc="ValueSource 单列输入">同一条页码规则运行三次</h2>
+      <p>参数化测试需要 JUnit Jupiter Params，Spring Boot 的 <code>spring-boot-starter-test</code> 通常已包含该模块。导入 <code>org.junit.jupiter.params.ParameterizedTest</code>、<code>org.junit.jupiter.params.provider.ValueSource</code> 和 <code>CsvSource</code>。初始化注解 <code>BeforeEach</code> 来自 <code>org.junit.jupiter.api</code>。</p>
+      <pre><code>@ParameterizedTest
+@ValueSource(strings = {"0", "-1", "-100"})
+void page_invalidPageNum_returns400(String pageNum) throws Exception {
+    mockMvc.perform(get("/user/list/page")
+            .param("pageNum", pageNum)
+            .param("pageSize", "10"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value("页码必须大于等于1"));
+
+    verifyNoInteractions(userService);
+}</code></pre>
+      <p>每次调用传入一个字符串，由 Spring MVC 绑定为整数。三个值都违反 <code>@Min(1)</code>，共用 HTTP 状态和提示断言。类型转换失败的 <code>pageNum=abc</code> 按它自己的响应约定验证。</p>
+
+      <h2 id="test-opt-csv-source" data-toc="CsvSource 多列数据">把每个输入和预期消息写在同一行</h2>
+      <pre><code>@ParameterizedTest
+@CsvSource({
+    "5, 每条页数必须大于等于10",
+    "101, 每条页数必须小于等于100"
+})
+void page_invalidPageSize_returns400(String pageSize, String expectedMessage)
+        throws Exception {
+    mockMvc.perform(get("/user/list/page")
+            .param("pageNum", "1")
+            .param("pageSize", pageSize))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value(expectedMessage));
+
+    verifyNoInteractions(userService);
+}</code></pre>
+      <p>每条 CSV 记录按列绑定到方法形参。第一列是请求值，第二列保留项目当前校验提示。列内含逗号时，可用成对单引号括起整列。本例的消息可以直接写，复盘中出现的问题是给消息加了起始单引号却没有闭合。</p>
+      <p>若 JSONPath 找不到提示，先用 <code>.andDo(print())</code> 查看响应。复盘的错误响应将 <code>message</code> 放在根对象，因此使用 <code>$.message</code>。<code>$.data.message</code> 会去 data 内查找。</p>
+
+      <h2 id="test-opt-captor" data-toc="捕获 DTO 与分组断言">用 ArgumentCaptor 取得实际入参</h2>
+      <p>沿用已有测试类的 JUnit 与 Mockito 静态导入，并补充用到的 <code>org.mockito.ArgumentCaptor</code>、<code>java.util.List</code> 和项目类型。发送请求后，在 <code>verify</code> 中捕获 DTO，再用 <code>getValue()</code> 读取它。</p>
+      <pre><code>@Test
+void page_withFilters_passesBoundDtoToService() throws Exception {
+    PageResult&lt;User&gt; pageResult = new PageResult&lt;&gt;();
+    pageResult.setPageNum(3);
+    pageResult.setPageSize(50);
+    pageResult.setTotal(0L);
+    pageResult.setRecords(List.of());
+    when(userService.page(any(UserPageQueryDTO.class))).thenReturn(pageResult);
+
+    mockMvc.perform(get("/user/list/page")
+            .param("pageNum", "3")
+            .param("pageSize", "50")
+            .param("username", "lili")
+            .param("minAge", "20")
+            .param("maxAge", "35"))
+        .andExpect(status().isOk());
+
+    ArgumentCaptor&lt;UserPageQueryDTO&gt; captor =
+            ArgumentCaptor.forClass(UserPageQueryDTO.class);
+    verify(userService).page(captor.capture());
+    UserPageQueryDTO dto = captor.getValue();
+
+    assertAll("分页查询参数",
+        () -&gt; assertEquals(3, dto.getPageNum(), "pageNum"),
+        () -&gt; assertEquals(50, dto.getPageSize(), "pageSize"),
+        () -&gt; assertEquals("lili", dto.getUsername(), "username"),
+        () -&gt; assertEquals(20, dto.getMinAge(), "minAge"),
+        () -&gt; assertEquals(35, dto.getMaxAge(), "maxAge"));
+}</code></pre>
+      <p><code>argThat()</code> 适合用简短谓词验证参数，捕获器适合取出完整对象再检查多个字段。若 MockMvc 在构造请求时报告 URI 格式错误，先确认传入的应用内路径以 <code>/</code> 开头，例如 <code>get("/user/list/page")</code>。</p>
+
+      <h2 id="test-opt-assert-all" data-toc="集中查看失败">一轮执行看到多个字段差异</h2>
+      <p>连续调用 <code>assertEquals()</code> 时，首个失败会中断测试方法。<code>assertAll()</code> 接收 Lambda 作为独立的断言任务，继续执行组内其他检查并集中报告普通断言失败。组名和字段名帮助定位差异。</p>
+      <p>学习记录中的实验保持请求值 3 和 lili，把断言预期临时改为 99 和 zhangsan，同一轮报告了页码和用户名两处失败。练习结束后恢复真实接口预期，再运行用例。</p>
+
+      <h2 id="test-opt-progress" data-toc="已完成与下一步">从测试组织走向集成测试</h2>
+      <p>复盘已完成测试前准备数据、非法页码与条数的参数化、DTO 五字段捕获和多失败汇总。接下来补充 <code>@AfterEach</code>、<code>@AfterAll</code> 与类级初始化和清理，整理测试数据辅助方法及命名，再用 <code>@SpringBootTest</code> 与隔离的测试数据库验证 Controller、Service、MyBatis SQL 和事务。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-pagination">上一篇：分页查询与 DTO 绑定 →</button><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics/unit-boundaries">复习：测试范围 →</button><button class="jump-link" type="button" data-id="springboot-transaction-propagation">后续：验证真实事务 →</button></p>
     `,
   },
   {
@@ -583,7 +698,7 @@ verifyNoInteractions(userMapper);</code></pre>
         <tr><td>Spring + 测试数据库集成测试</td><td>组件协作、Mapper SQL、事务与数据库约束</td><td>所有生产环境条件都一致</td></tr>
       </tbody></table>
       <p>这里没有启动 Spring 容器，@InjectMocks 创建的 Service 不会自动获得 Spring 事务代理。模拟 Mapper 返回值不能验证 @Transactional 或 REQUIRED / REQUIRES_NEW。验证回滚要使用真实事务资源，并避免测试方法自身的自动回滚掩盖业务提交行为。</p>
-      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-service-crud-tests">下一篇：CRUD 正常与异常测试 →</button><button class="jump-link" type="button" data-id="springboot-transaction-propagation">对照：真实事务传播 →</button></p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-service-crud-tests">下一篇：CRUD 正常与异常测试 →</button><button class="jump-link" type="button" data-id="springboot-transaction-propagation">对照：真实事务传播 →</button><button class="jump-link" type="button" data-id="springboot-junit-mockito-test-optimization">进阶：参数化与多字段断言 →</button></p>
     `,
   },
   {
@@ -3795,9 +3910,10 @@ public void outer(Long id1, Long id2) {
         <li>分别查看控制台异常和数据库最终状态，HTTP 200/500 不能单独证明事务结果。</li>
         <li>每轮恢复测试数据，只改变一个传播配置，避免实验条件互相干扰。</li>
       </ol>
-      <p>后续已完成 JUnit 5 / Mockito 的 Service 测试及 MockMvc 核心 Web 测试，当前计划是 JUnit 进阶与集成测试。模拟 Mapper 或 Service 不能验证真实事务；事务集成测试还要检查测试方法自身的自动回滚是否掩盖业务行为。</p>
+      <p>后续已完成 Service 单元测试、MockMvc Web 测试及参数化与多字段断言练习。下一阶段用真实事务资源验证提交与回滚，并检查测试方法自身的自动回滚是否掩盖业务行为。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">下一阶段：JUnit 5 与 Mockito →</button>
+        <button class="jump-link" type="button" data-id="springboot-junit-mockito-test-optimization">测试进阶：参数化与多字段断言 →</button>
         <button class="jump-link" type="button" data-id="springboot-transaction-bean">上一篇：事务回滚与 Bean 代理 →</button>
         <button class="jump-link" type="button" data-id="interview-spring-boot/interview-propagation">面试：事务传播与 rollback-only →</button>
         <button class="jump-link" type="button" data-id="db-isolation-locks">相关：事务隔离与并发锁 →</button>
