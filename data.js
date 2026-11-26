@@ -4612,6 +4612,8 @@ where id=1 and version=1;</code></pre>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-user-admin-crud">项目：搭建与查询链路 →</button>
         <button class="jump-link" type="button" data-id="springboot-dynamic-sql-search">项目：动态条件分页 →</button>
+        <button class="jump-link" type="button" data-id="interview-redis-mq/interview-stale-profile">场景题：改名后仍读到旧值 →</button>
+        <button class="jump-link" type="button" data-id="interview-group-read-receipts">场景题：万人群已读未读 →</button>
       </p>
     `,
   },
@@ -4921,7 +4923,7 @@ EXPLAIN 检查访问类型、索引和扫描行数
     category: "Java 后端面试",
     order: 60,
     title: "Redis、MQ 与高并发常见面试题",
-    summary: "缓存问题、分布式锁、削峰、幂等和最终一致性",
+    summary: "缓存问题、分布式锁、削峰、幂等与改名后读到旧值的排查",
     related: [
       "seckill-redis-mq",
       "api-idempotency-request-id",
@@ -4970,6 +4972,22 @@ EXPLAIN 检查访问类型、索引和扫描行数
       <blockquote>
         <p>先明确业务能否接受短暂不一致。常见缓存更新策略是先更新数据库，再删除缓存；删除失败需要重试或通过消息补偿。秒杀预扣库存属于跨系统流程，MySQL 本地事务不能自动回滚 Redis，需要可靠消息、幂等重试、补偿和对账保证最终一致。不存在一个适合所有业务的“绝对一致缓存模板”。</p>
       </blockquote>
+
+      <h2 id="interview-stale-profile" data-toc="场景题：改名后读到旧值">用户改名成功，为什么刷新几次还是旧名字？</h2>
+      <blockquote>
+        <p>我会先看刷新时资料接口返回的名字。接口已经返回新值，就查前端状态和渲染。接口还返回旧值，就对比 MySQL 主库、实际读库和 Redis 中的数据。如果主库已更新而缓存仍旧，优先检查失效是否失败、是否漏掉页面使用的缓存 key，以及旧值有没有被重新回填。</p>
+      </blockquote>
+      <table>
+        <thead><tr><th>观察结果</th><th>排查方向</th></tr></thead>
+        <tbody>
+          <tr><td>主库是新值，Redis 是旧值</td><td>检查删 key 的结果、详情或列表是否各有缓存，以及并发回填。旧值恰好在 TTL 附近消失是缓存线索。</td></tr>
+          <tr><td>主库是新值，绕过缓存仍读到旧值</td><td>确认查询是否被路由到滞后的副本。</td></tr>
+          <tr><td>主库稍后才变成新值</td><td>确认更新接口是等事务提交后返回，还是只确认异步任务已受理。</td></tr>
+        </tbody>
+      </table>
+      <p><strong>基础方案</strong>采用 Cache Aside。数据库事务提交后删除相关 Redis key，读取未命中时查库并回填。可以在改名的同一个事务里写入缓存失效事件，由后台任务投递并在删除失败时重试，TTL 用于兜底。</p>
+      <p><strong>追问：为什么删完还能读到旧值？</strong> 某个读请求在写事务提交前读到旧名字，却在缓存被删除后才回填。若业务需要拒绝这类回填，可以在失效时保留最低可接受的数据版本，并在回填时原子校验。只比较缓存里已有的值无法保护空 key。使用读写分离时，还要防止从滞后的读库回填旧值。</p>
+      <p><strong>追问：改名的人刷新时必须立刻看到新名字怎么办？</strong> 更新接口可以返回已提交的新资料供前端立即显示。若刷新也要保证读到本次写入，可让该用户在缓存同步前绕过旧缓存并读主库，或携带本次写入的版本，缓存版本不足时回源主库。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="seckill-redis-mq">深入：秒杀系统架构 →</button>
         <button class="jump-link" type="button" data-id="api-idempotency-request-id">深入：接口幂等性 →</button>
@@ -5041,6 +5059,46 @@ top</code></pre>
         <button class="jump-link" type="button" data-id="linux-common-commands">深入：Linux 后端运维 →</button>
         <button class="jump-link" type="button" data-id="springboot-result-validation">项目：统一响应与异常处理 →</button>
       </p>
+    `,
+  },
+  {
+    id: "interview-group-read-receipts",
+    category: "Java 后端面试",
+    order: 80,
+    title: "面试场景题：万人群已读未读怎么设计？",
+    summary: "用群消息序号和成员已读游标计算未读数与单条消息已读名单",
+    related: ["interview-answer-framework", "interview-redis-mq", "api-idempotency-request-id"],
+    content: `
+      <span class="article-tag">Java 后端面试 · 场景题</span>
+      <h1>面试场景题：万人群已读未读怎么设计？</h1>
+      <p class="lead">先明确群聊需要显示什么：会话红点、精确未读数，还是单条消息的已读人数和名单。假设“读到第 N 条”表示此前有权看到的消息也算已读，就可以用一个游标表示每位成员的阅读进度。</p>
+
+      <h2 id="group-read-model" data-toc="参考回答与数据模型">给消息编号，每人保存一个游标</h2>
+      <blockquote>
+        <p>我会给群内消息分配单调递增的序号，每位成员在每个群保存一个 last_read_seq。发送时只记录消息并更新群的最新可见序号，已读时只推进当前成员的游标。这样已读状态无需在每次发消息时给一万名成员各写一行。</p>
+      </blockquote>
+      <table>
+        <thead><tr><th>数据</th><th>关键字段</th></tr></thead>
+        <tbody>
+          <tr><td>群消息</td><td><code>group_id</code>、<code>seq</code>、<code>sender_id</code></td></tr>
+          <tr><td>群成员</td><td><code>group_id</code>、<code>user_id</code>、<code>join_seq</code>、<code>last_read_seq</code></td></tr>
+          <tr><td>群会话</td><td><code>group_id</code>、<code>latest_seq</code></td></tr>
+        </tbody>
+      </table>
+      <p>消息可用 <code>(group_id, seq)</code> 唯一索引支持范围查询。消息对客户端可见的次序要和游标语义一致。如果序号较小的消息还可能晚于较大序号出现，就不能直接让客户端用较大序号标记此前全部已读。</p>
+
+      <h2 id="group-read-cursor" data-toc="多端与重试">已读游标只向前推进</h2>
+      <p>客户端上报已经展示到的序号。服务端校验成员身份和该序号是否在成员可见范围，再原子地更新为 <code>max(旧游标, 上报序号)</code>。同一个请求重试没有额外效果，旧设备迟到的请求也不会覆盖新设备的进度。若新成员看不到入群前的历史，就以入群时的可见上界初始化游标。</p>
+
+      <h2 id="group-read-unread" data-toc="红点与未读数">什么时候能直接用序号相减？</h2>
+      <p>群最新消息是 105，小王读到 102。如果 103 到 105 都存在、可见且计入未读，就有三条未读。序号有空洞、消息被撤回、自己发的消息不计数或中途入群时，应按实际可见且计入未读的消息统计。只显示红点时，判断游标之后是否存在这样的消息即可。</p>
+
+      <h2 id="group-read-receipts" data-toc="已读人数与名单">某条消息有哪些人已读？</h2>
+      <p>对序号为 103 的消息，先按产品规则确定有资格接收它的成员，再找出其中 <code>last_read_seq &gt;= 103</code> 的人。如果统计口径是发送时的成员，就需要保留成员加入、退出区间，避免用当前群成员错误统计历史消息。名单可按需分页，允许短暂延迟的已读人数可缓存。若一次读完大量历史，每条同步更新计数会放大写入。</p>
+
+      <h2 id="group-read-gaps" data-toc="追问：跳读与扩展">跳到最新消息，跳过的还算未读怎么办？</h2>
+      <p>单游标只能表示阅读进度的连续前缀。如果只读了第 105 条而 103 和 104 还要保留未读，就要额外记录已读或未读区间。若产品要求任意逐条已读状态，则应按单条消息记录回执并评估存储、写入和查询开销。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="interview-answer-framework">复习：面试回答框架 →</button><button class="jump-link" type="button" data-id="interview-redis-mq/interview-stale-profile">另一道场景题：改名后读到旧值 →</button></p>
     `,
   },
   {
