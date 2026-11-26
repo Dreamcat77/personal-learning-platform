@@ -4603,7 +4603,7 @@ where id=1 and version=1;</code></pre>
 
       <h2 id="interview-review-method" data-toc="复习方法">如何使用这套面试题</h2>
       <ol>
-        <li>先遮住参考回答，用 30～60 秒口述。</li>
+        <li>先读题，用 30～60 秒口述，再展开参考答案对照。</li>
         <li>检查是否包含结论、原理、项目例子和边界。</li>
         <li>遇到答不出的追问，回到对应知识文章，而不是继续背句子。</li>
         <li>把自己的项目代码和真实错误替换进答案。</li>
@@ -4614,6 +4614,8 @@ where id=1 and version=1;</code></pre>
         <button class="jump-link" type="button" data-id="springboot-dynamic-sql-search">项目：动态条件分页 →</button>
         <button class="jump-link" type="button" data-id="interview-redis-mq/interview-stale-profile">场景题：改名后仍读到旧值 →</button>
         <button class="jump-link" type="button" data-id="interview-group-read-receipts">场景题：万人群已读未读 →</button>
+        <button class="jump-link" type="button" data-id="interview-order-data-scenarios">场景练习：订单与数据库 →</button>
+        <button class="jump-link" type="button" data-id="interview-message-cache-scenarios">场景练习：缓存与消息 →</button>
       </p>
     `,
   },
@@ -4636,14 +4638,22 @@ where id=1 and version=1;</code></pre>
       <p class="lead">这一组题看起来基础，却最容易暴露概念是否扎实。回答时先给准确结论，再用一小段代码说明，不要只背“地址和值”几个词。</p>
 
       <h2 id="interview-primitive-wrapper" data-toc="基本类型与包装类">基本类型和包装类型有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>基本类型直接表示数值或布尔值，例如 int、long、boolean；包装类型是对象，例如 Integer、Long、Boolean，可以为 null，也能用于泛型和集合。Java 支持自动装箱和拆箱，但包装对象为 null 时自动拆箱会抛出 NullPointerException。业务 DTO 常用 Integer、Long 表达“参数未提供”，计算密集的局部变量则常用基本类型。</p>
       </blockquote>
       <pre><code>Integer age = null;
 int value = age; // 自动拆箱，抛 NullPointerException</code></pre>
       <p><strong>常见追问：</strong>为什么两个 Integer 不应依赖 <code>==</code> 比较数值？因为包装对象可能涉及缓存或不同对象，应使用 <code>equals</code>，并先处理 null。</p>
+        </div>
+      </details>
 
       <h2 id="interview-equals" data-toc="==、equals、hashCode">==、equals 和 hashCode 有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <p><strong>回答思路：</strong>先区分基本类型和引用类型，再说明哈希容器的契约。</p>
       <blockquote>
         <p>基本类型的 == 比较值；引用类型的 == 比较两个变量是否指向同一个对象。Object 默认的 equals 也是比较身份，但 String 等类重写后会比较内容。若两个对象 equals 为 true，它们的 hashCode 必须相同，否则 HashMap、HashSet 可能把相等对象放到不同桶；hashCode 相同不代表 equals 一定为 true，因为可能哈希冲突。</p>
@@ -4654,8 +4664,13 @@ String b = new String("Java");
 a == b       // false：不是同一对象
 a.equals(b)  // true：内容相同</code></pre>
       <p><strong>常见追问：</strong>自定义对象作为 HashMap key 时，为什么通常要同时重写 equals 和 hashCode？</p>
+        </div>
+      </details>
 
       <h2 id="interview-value-passing" data-toc="Java 值传递">Java 是值传递还是引用传递？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>Java 只有值传递。传基本类型时复制具体值；传对象时复制的是“对象引用这个值”，所以方法内可以通过副本修改同一个对象的字段，但把形参重新指向新对象不会改变调用方变量本身。</p>
       </blockquote>
@@ -4664,8 +4679,13 @@ a.equals(b)  // true：内容相同</code></pre>
     user = new User();      // 只改变形参副本的指向
 }</code></pre>
       <p>不要回答成“基本类型值传递、对象引用传递”；更准确的说法是两者都是值传递，只是对象参数传递的值恰好是引用。</p>
+        </div>
+      </details>
 
       <h2 id="interview-overload-override" data-toc="重载与重写">重载和重写有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <table>
         <thead><tr><th>概念</th><th>发生位置</th><th>判断依据</th></tr></thead>
         <tbody>
@@ -4674,36 +4694,64 @@ a.equals(b)  // true：内容相同</code></pre>
         </tbody>
       </table>
       <p>重载在编译期根据参数选择方法，不能只靠返回类型区分；重写体现运行时多态，访问权限不能比父类更严格，建议使用 <code>@Override</code> 让编译器检查。</p>
+        </div>
+      </details>
 
       <h2 id="interview-oop" data-toc="封装、继承、多态">怎样理解封装、继承和多态？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>封装把数据和行为放在清晰边界内，通过公开方法维护对象状态；继承让子类复用并扩展父类能力，但会形成较强耦合；多态让父类型引用在运行时调用不同子类实现。实际设计通常优先组合和接口，只有存在稳定“是一个”的关系时才使用继承。</p>
       </blockquote>
       <p><strong>项目联系：</strong>Service 依赖 Mapper 接口而不是具体实现，MyBatis 在运行时提供代理对象，就是面向接口和多态的实际例子。</p>
+        </div>
+      </details>
 
       <h2 id="interview-interface-abstract" data-toc="接口与抽象类">接口和抽象类有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>接口更适合定义能力和契约，一个类可以实现多个接口；抽象类适合表达有共同状态和部分实现的父类，一个类只能直接继承一个类。现代 Java 接口可以有 default、static 方法，但通常仍不用于保存普通实例状态。选择时先问“需要共享状态和实现，还是只需要统一能力”。</p>
       </blockquote>
       <p><strong>常见追问：</strong>Mapper 为什么是接口？便于声明数据访问契约，并由 MyBatis 生成代理实现。</p>
+        </div>
+      </details>
 
       <h2 id="interview-final-finally" data-toc="final、finally、finalize">final、finally、finalize 有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <ul>
         <li><code>final</code>：变量只能赋值一次、方法不能被重写、类不能被继承；final 引用不能改指向，但对象内容未必不可变。</li>
         <li><code>finally</code>：异常处理结构的一部分，通常用于清理资源；现代 Java 更推荐 try-with-resources 管理可关闭资源。</li>
         <li><code>finalize()</code>：过去由垃圾回收前尝试调用的机制，不可靠且已被弃用并计划移除，不应作为资源释放方案。</li>
       </ul>
+        </div>
+      </details>
 
       <h2 id="interview-static" data-toc="static 与实例成员">static 和实例成员有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>static 成员属于类，类加载后可通过类名访问；实例成员属于具体对象，需要对象才能访问。static 方法没有 this，不能直接使用实例字段。工具函数或无状态工厂方法可以是 static，但把可变业务状态放进 static 字段会形成全局共享，带来并发和测试问题。</p>
       </blockquote>
+        </div>
+      </details>
 
       <h2 id="interview-string-builders" data-toc="String 与 Builder">String、StringBuilder、StringBuffer 怎么选？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>String 不可变，修改会产生新对象，适合普通文本和作为 Map key；StringBuilder 可变且非线程安全，单线程循环拼接时通常优先使用；StringBuffer 的常用方法带同步，线程安全开销更高，但多个线程共享同一缓冲区本身就应谨慎设计。</p>
       </blockquote>
       <p>String 不可变有利于常量池、哈希缓存、线程共享和安全，但“变量重新指向新 String”不代表原对象被修改。</p>
+        </div>
+      </details>
+
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="java-boolean-logic">基础：逻辑运算符与短路 →</button>
         <button class="jump-link" type="button" data-id="interview-java-core">下一篇：集合、异常与并发 →</button>
@@ -4731,33 +4779,59 @@ a.equals(b)  // true：内容相同</code></pre>
       <p class="lead">这一篇聚焦后端代码中最常见的集合选择、HashMap、异常处理和线程语义；基础类型、equals、重载重写等内容放在前一篇。</p>
 
       <h2 id="interview-list" data-toc="ArrayList 与 LinkedList">ArrayList 和 LinkedList 怎么选？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>ArrayList 底层是动态数组，按下标访问快，尾部追加通常高效，但中间插入删除需要移动元素。LinkedList 是双向链表，已知节点位置时插入删除方便，但按下标查找需要遍历，节点也有额外内存开销。实际后端业务中遍历和随机访问更常见，因此通常优先 ArrayList，不能简单说“增删多就用 LinkedList”。</p>
       </blockquote>
       <p><strong>常见追问：</strong>ArrayList 扩容、线程安全集合、CopyOnWriteArrayList 的适用场景。</p>
+        </div>
+      </details>
 
       <h2 id="interview-hashmap" data-toc="HashMap 原理">HashMap 的 put 和 get 大致怎样工作？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>HashMap 根据 key 的 hash 计算桶位置。put 时如果桶为空就插入；发生冲突时在链表或树结构中通过 hash 和 equals 查找相同 key，存在则覆盖，不存在则追加。get 也先定位桶，再比较 key。Java 8 在冲突较多且容量满足条件时会把链表树化，降低极端查找成本。HashMap 默认不是线程安全的。</p>
       </blockquote>
       <p><strong>回答边界：</strong>平均时间接近 O(1)，但依赖合理 hash 分布；不要死背树化数字而解释不清机制。</p>
+        </div>
+      </details>
 
       <h2 id="interview-exception" data-toc="异常体系">受检异常和运行时异常有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>受检异常在编译阶段要求捕获或声明抛出，适合调用方有机会恢复的外部失败；RuntimeException 属于非受检异常，常表示参数、状态或编程错误。异常不应全部 catch 后吞掉：要么处理并记录上下文，要么继续抛出。Spring 事务默认主要对 RuntimeException 和 Error 回滚。</p>
       </blockquote>
       <p><strong>项目联系：</strong>参数校验异常由全局异常处理器转换为统一响应；系统异常要记录日志，不能把堆栈直接返回前端。</p>
+        </div>
+      </details>
 
       <h2 id="interview-thread" data-toc="线程可见性与 ThreadLocal">synchronized、volatile 和 ThreadLocal 分别解决什么？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>synchronized 通过互斥和内存语义保护临界区；volatile 保证变量的可见性和一定的有序性，但不能让复合操作自动变成原子操作；ThreadLocal 为每个线程保存独立变量副本，不是锁。Web 项目可用 ThreadLocal 保存当前用户，但线程池会复用线程，请求结束必须 remove，异步线程也不会自动继承普通 ThreadLocal。</p>
       </blockquote>
+        </div>
+      </details>
 
       <h2 id="interview-boolean-short-circuit" data-toc="逻辑运算与短路">&amp;&amp; 和 || 有什么区别，什么是短路？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>&amp;&amp; 要求所有条件都为 true，|| 只要一个条件为 true。它们都会从左向右短路求值：&amp;&amp; 左侧为 false 时不再执行右侧，|| 左侧为 true 时不再执行右侧。短路既减少无用计算，也能先判断对象是否为 null，再安全访问属性。单个 &amp; 和 | 在 boolean 运算中不会短路，两侧都会执行。</p>
       </blockquote>
       <p><strong>项目联系：</strong>年龄范围校验中，每组先判断 Integer 非 null，再比较数值；多组错误之间用 || 连接。</p>
+        </div>
+      </details>
+
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="interview-java-language-basics">上一篇：基础语法与面向对象 →</button>
         <button class="jump-link" type="button" data-id="interceptor-threadlocal">深入：请求拦截与用户上下文 →</button>
@@ -4789,23 +4863,41 @@ a.equals(b)  // true：内容相同</code></pre>
       <p class="lead">Spring 面试题要把“注解怎么写”提升为“容器、代理和请求链路为什么这样工作”。</p>
 
       <h2 id="interview-ioc" data-toc="IOC 与 DI">什么是 IOC 和依赖注入？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>IOC 是把对象创建、依赖组装和生命周期管理交给 Spring 容器，而不是业务代码到处 new。DI 是容器把对象所需依赖注入进去的实现方式。这样可以降低类之间的直接耦合，更容易替换实现和编写测试。项目中 Controller 通过构造器接收 Service，Service 再接收 Mapper，就是依赖注入。</p>
       </blockquote>
       <p><strong>常见追问：</strong>为什么推荐构造器注入？依赖明确、可保持字段不可变，也方便单元测试。</p>
+        </div>
+      </details>
 
       <h2 id="interview-auto-config" data-toc="自动配置">Spring Boot 自动配置做了什么？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>Spring Boot 根据 classpath 中的依赖、配置属性和当前已有 Bean，按条件装配常用组件。Starter 负责聚合依赖，自动配置类负责在条件满足时创建 Bean，application.yml 提供参数。它减少样板配置，但不是“零配置魔法”；出现问题时仍要检查依赖、条件报告和配置绑定。</p>
       </blockquote>
+        </div>
+      </details>
 
       <h2 id="interview-request-flow" data-toc="请求执行链">一个请求怎样到达 Controller？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>请求先由内嵌 Tomcat 接收，再进入 Spring MVC 的 DispatcherServlet。它根据 HandlerMapping 找到 Controller 方法，通过参数解析器处理 PathVariable、RequestParam、RequestBody 等参数，必要时由消息转换器把 JSON 反序列化为对象。Controller 调用 Service 和 Mapper，返回值再由消息转换器序列化为 JSON。</p>
       </blockquote>
       <p><strong>项目联系：</strong>统一响应 Result 最终仍由 Jackson 转成 JSON；@Valid 在参数绑定后执行校验。</p>
+        </div>
+      </details>
 
       <h2 id="interview-transactional" data-toc="事务失效场景">@Transactional 为什么可能不生效？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>Spring 通常通过代理开启事务。常见失效或不回滚原因包括：同类内部自调用绕过代理、方法不是可代理的公开方法、异常被 catch 后没有继续抛出、抛出的异常不在默认回滚范围、操作的不是同一个事务资源。MySQL 本地事务也不能自动回滚 Redis 或 MQ。</p>
       </blockquote>
@@ -4813,8 +4905,13 @@ a.equals(b)  // true：内容相同</code></pre>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-transaction-bean">项目实验：事务与 Bean 代理 →</button>
       </p>
+        </div>
+      </details>
 
       <h2 id="interview-propagation" data-toc="事务传播与 rollback-only">REQUIRED、REQUIRES_NEW 和 rollback-only 有什么关系？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>REQUIRED 有事务就加入，没有就创建，因此内外层通常共用一个物理事务；REQUIRES_NEW 会挂起外层并创建独立事务。共享事务中的内层方法若触发回滚规则，事务可能被标记为 rollback-only。即使外层 catch 了异常，提交时仍只能回滚，并可能出现 UnexpectedRollbackException。</p>
       </blockquote>
@@ -4822,8 +4919,13 @@ a.equals(b)  // true：内容相同</code></pre>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-transaction-propagation">项目实验：事务传播机制 →</button>
       </p>
+        </div>
+      </details>
 
       <h2 id="interview-testing" data-toc="单元与集成测试">JUnit、Mockito、MockMvc 和集成测试有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>JUnit 负责组织测试和断言，Mockito 负责模拟依赖及验证调用。Service 单元测试保留真实 Service、模拟 Mapper，验证正常与异常分支。MockMvc 用于测试 Web 请求处理，可配合 Web 切片测试模拟 Service。验证真实 SQL、事务回滚与传播时，需要加载相关 Spring 组件并使用测试数据库；Mockito 的模拟结果不能证明数据库行为。</p>
       </blockquote>
@@ -4831,17 +4933,30 @@ a.equals(b)  // true：内容相同</code></pre>
       <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">基础：测试结构与范围 →</button><button class="jump-link" type="button" data-id="springboot-service-crud-tests">项目：CRUD 测试场景 →</button></p>
       <p><strong>MockMvc 追问：</strong>@WebMvcTest 加载 Web 切片，@MockitoBean 提供 Spring 上下文中的模拟依赖。参数校验失败应验证 Service 未被调用；Service 抛业务异常用 thenThrow，并检查 HTTP 状态与 JSON 业务码。前者和后者需要不同的交互断言。</p>
       <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-validation">实战：校验与全局异常测试 →</button></p>
+        </div>
+      </details>
 
       <h2 id="interview-business-exception" data-toc="业务异常处理">Spring Boot 中怎样处理业务异常？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>可以定义继承 RuntimeException 的 BusinessException，在 Service 根据业务规则主动抛出，并携带合适的 HTTP 状态或业务错误信息。全局使用 @RestControllerAdvice 和 @ExceptionHandler 捕获，转换为统一 Result 和真实 HTTP 状态。参数错误通常是 400，未认证是 401，资源不存在是 404，业务冲突可用 409；SQL 和代码缺陷不能包装成“业务失败”来掩盖。</p>
       </blockquote>
       <p><strong>项目联系：</strong>查询不到用户抛 404；删除影响 0 行也表示目标不存在；Long ID 检查 null 和正数范围，不能与空字符串比较。</p>
+        </div>
+      </details>
 
       <h2 id="interview-filter-interceptor-aop" data-toc="Filter、Interceptor、AOP">Filter、Interceptor 和 AOP 有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>Filter 属于 Servlet 规范，位置更靠外，可处理进入 Web 应用的请求与响应；Interceptor 属于 Spring MVC，围绕 Controller 调用，能拿到处理器信息，适合登录校验和请求上下文；AOP 围绕 Spring Bean 方法织入逻辑，适合日志、事务和统一监控。选择取决于要拦截的层级，不是谁更高级。</p>
       </blockquote>
+        </div>
+      </details>
+
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="java-spring-annotations">复习：Spring Boot 常用注解 →</button>
         <button class="jump-link" type="button" data-id="interceptor-threadlocal">复习：Interceptor 与 ThreadLocal →</button>
@@ -4869,30 +4984,53 @@ a.equals(b)  // true：内容相同</code></pre>
       <p class="lead">数据库题不要只背名词。回答时要说明查询怎样定位数据、并发事务怎样互相影响，以及你会如何验证 SQL 是否真的变快。</p>
 
       <h2 id="interview-index" data-toc="索引与 B+Tree">为什么索引能加快查询？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>索引是额外维护的数据结构，用空间和写入成本换取查询速度。InnoDB 常用 B+Tree：树高较低，非叶子节点保存导航信息，叶子节点有序，既适合等值查找，也适合范围扫描。主键索引叶子节点保存整行数据，二级索引叶子节点保存索引列和主键值，查询其他列时可能需要回表。</p>
       </blockquote>
       <p><strong>常见追问：</strong>联合索引的最左前缀、覆盖索引、为什么不为每列都建索引。</p>
+        </div>
+      </details>
 
       <h2 id="interview-index-failure" data-toc="索引可能失效">哪些写法可能让索引难以利用？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>常见情况包括：没有满足联合索引的最左前缀、对索引列做函数或隐式类型转换、LIKE 以通配符开头、范围条件后续列利用受限，以及数据区分度太低导致优化器认为全表扫描更划算。是否使用索引不能只靠猜，应通过 EXPLAIN、实际数据分布和执行时间验证。</p>
       </blockquote>
       <p><strong>项目联系：</strong><code>LIKE '%Zhang%'</code> 通常难以利用普通前缀索引；小数据学习项目没问题，数据增长后要重新评估搜索方案。</p>
+        </div>
+      </details>
 
       <h2 id="interview-isolation" data-toc="事务隔离与 MVCC">事务隔离级别和 MVCC 怎么理解？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>隔离级别用于平衡并发性能与读取一致性。读未提交可能脏读；读已提交每次查询通常读取新的已提交版本；可重复读让同一事务中的一致性读取看到稳定快照；串行化隔离最强但并发成本高。InnoDB 通过 undo log、事务版本和 Read View 等机制实现 MVCC，使普通一致性读在很多情况下无需阻塞写操作。</p>
       </blockquote>
       <p><strong>回答边界：</strong>MVCC 主要解决快照读；加锁读和写操作仍涉及锁。不要把“可重复读”简单说成所有场景绝不会出现幻象。</p>
+        </div>
+      </details>
 
       <h2 id="interview-locks" data-toc="悲观锁与乐观锁">悲观锁和乐观锁怎样选择？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>悲观锁认为冲突概率高，先锁住数据再操作，例如 SELECT ... FOR UPDATE，逻辑直观但会阻塞并占用资源。乐观锁认为冲突较少，更新时带 version 或旧值条件，影响行数为 0 就说明发生冲突，可重试或返回失败。分布式锁用于跨进程协调，但仍要处理过期、误释放、续期和业务兜底。</p>
       </blockquote>
       <p><strong>项目联系：</strong>并发扣款不能只靠 @Transactional；还需要条件更新、行锁或其他并发控制保证余额不会被重复扣减。</p>
+        </div>
+      </details>
 
       <h2 id="interview-sql-tuning" data-toc="SQL 排查">一条查询很慢，你怎样排查？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <pre class="flow">确认请求和慢 SQL
   ↓
 查看执行频率、参数与数据量
@@ -4903,13 +5041,21 @@ EXPLAIN 检查访问类型、索引和扫描行数
   ↓
 修改后用相同数据与条件重新测量</pre>
       <p>不要一上来就“加索引”。分页 SQL 还要关注大 offset：数据库可能扫描并丢弃大量前置记录；可根据业务改用基于唯一有序字段的游标分页。</p>
+        </div>
+      </details>
 
       <h2 id="interview-dynamic-query" data-toc="动态条件查询">项目中怎样实现多条件动态查询？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <p><strong>回答思路：</strong>参数接收 → 动态 SQL → count/list 一致 → 真实排错。</p>
       <blockquote>
         <p>我在用户分页接口中增加了可选的 username、minAge 和 maxAge。Controller 用可选 RequestParam 接收，Service 计算 offset 并传递条件，Mapper 使用 script、where 和多个 if 动态拼接 LIKE 与年龄区间。count 和 selectPage 复用同一组筛选条件，保证 total 准确。调试时曾把 XML 的小于号转义写成 %lt;=，我根据 HTTP 500 中的 BadSqlGrammarException 和实际 SQL 定位并改为 &amp;lt;=，之后用单条件、组合条件和空结果重新验证。</p>
       </blockquote>
       <p><strong>追问边界：</strong>参数继续增加时应使用 Query DTO；包含匹配和大 offset 在大数据量下需要进一步优化。</p>
+        </div>
+      </details>
+
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="db-isolation-locks">深入：事务隔离与并发锁 →</button>
         <button class="jump-link" type="button" data-id="case-concurrent-withdraw">场景：并发扣款 →</button>
@@ -4936,12 +5082,20 @@ EXPLAIN 检查访问类型、索引和扫描行数
       <p class="lead">高并发题的关键是分清每个组件解决哪一种压力：缓存减少读库，原子操作控制竞争，MQ 缓冲峰值，幂等与补偿处理重复和跨系统失败。</p>
 
       <h2 id="interview-redis-use" data-toc="为什么使用 Redis">为什么 Redis 快，后端为什么使用它？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>Redis 主要在内存中操作，数据结构针对常见访问模式优化，事件处理模型避免了大量线程切换开销。后端常用它做缓存、计数器、排行榜、会话、限流和短期协调。但 Redis 不是因为快就能替代 MySQL：内存成本、持久化、数据一致性和复杂查询能力都不同。</p>
       </blockquote>
       <p><strong>常见追问：</strong>String、Hash、List、Set、ZSet 分别适合什么数据；持久化和主从故障时会发生什么。</p>
+        </div>
+      </details>
 
       <h2 id="interview-cache-problems" data-toc="缓存三大问题">缓存穿透、击穿和雪崩有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <table>
         <thead><tr><th>问题</th><th>含义</th><th>常见思路</th></tr></thead>
         <tbody>
@@ -4951,29 +5105,55 @@ EXPLAIN 检查访问类型、索引和扫描行数
         </tbody>
       </table>
       <p>回答时要先描述流量形态，再给方案；三者不是同一个问题的三个名字。</p>
+        </div>
+      </details>
 
       <h2 id="interview-distributed-lock" data-toc="分布式锁">Redis 分布式锁要注意什么？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>基础做法是 SET key value NX PX timeout：NX 保证只在不存在时设置，超时避免持锁进程崩溃后永久死锁，value 使用请求唯一标识，释放时通过 Lua 原子地校验 value 再删除。还要考虑业务执行超过锁时间、续期、主从切换和锁粒度。分布式锁不是数据库约束的替代品，重要数据仍需条件更新或唯一约束兜底。</p>
       </blockquote>
+        </div>
+      </details>
 
       <h2 id="interview-mq-use" data-toc="为什么使用 MQ">MQ 为什么能削峰和解耦？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>生产者把任务写入队列后可以快速返回，消费者按下游承载能力异步处理，因此瞬时流量被平摊到后续时间。生产者只依赖消息契约，不直接同步调用多个下游，也降低了耦合。但 MQ 没有让数据库本身变快，还会引入消息丢失、重复、顺序、积压和一致性问题。</p>
       </blockquote>
       <p><strong>项目联系：</strong>秒杀中 Redis 原子预扣解决库存竞争，MQ 解决瞬时请求直冲数据库，两者职责不同。</p>
+        </div>
+      </details>
 
       <h2 id="interview-mq-idempotency" data-toc="重复消费与幂等">MQ 重复投递怎样避免重复业务？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>消费者应以业务唯一标识实现幂等，例如订单号或 requestId，并用数据库唯一约束做最终兜底。重复消息到达时识别为已成功处理，返回已有结果或直接确认。@Transactional 只能保证一次数据库事务内部一致，不能阻止第二次消息开启新事务再次执行。</p>
       </blockquote>
+        </div>
+      </details>
 
       <h2 id="interview-consistency" data-toc="缓存与数据库一致性">Redis 与 MySQL 不一致怎么办？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>先明确业务能否接受短暂不一致。常见缓存更新策略是先更新数据库，再删除缓存；删除失败需要重试或通过消息补偿。秒杀预扣库存属于跨系统流程，MySQL 本地事务不能自动回滚 Redis，需要可靠消息、幂等重试、补偿和对账保证最终一致。不存在一个适合所有业务的“绝对一致缓存模板”。</p>
       </blockquote>
+        </div>
+      </details>
 
       <h2 id="interview-stale-profile" data-toc="场景题：改名后读到旧值">用户改名成功，为什么刷新几次还是旧名字？</h2>
+      <p class="interview-hint">提示：先对比刷新接口返回的名字和页面显示的名字。</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>我会先看刷新时资料接口返回的名字。接口已经返回新值，就查前端状态和渲染。接口还返回旧值，就对比 MySQL 主库、实际读库和 Redis 中的数据。如果主库已更新而缓存仍旧，优先检查失效是否失败、是否漏掉页面使用的缓存 key，以及旧值有没有被重新回填。</p>
       </blockquote>
@@ -4988,6 +5168,9 @@ EXPLAIN 检查访问类型、索引和扫描行数
       <p><strong>基础方案</strong>采用 Cache Aside。数据库事务提交后删除相关 Redis key，读取未命中时查库并回填。可以在改名的同一个事务里写入缓存失效事件，由后台任务投递并在删除失败时重试，TTL 用于兜底。</p>
       <p><strong>追问：为什么删完还能读到旧值？</strong> 某个读请求在写事务提交前读到旧名字，却在缓存被删除后才回填。若业务需要拒绝这类回填，可以在失效时保留最低可接受的数据版本，并在回填时原子校验。只比较缓存里已有的值无法保护空 key。使用读写分离时，还要防止从滞后的读库回填旧值。</p>
       <p><strong>追问：改名的人刷新时必须立刻看到新名字怎么办？</strong> 更新接口可以返回已提交的新资料供前端立即显示。若刷新也要保证读到本次写入，可让该用户在缓存同步前绕过旧缓存并读主库，或携带本次写入的版本，缓存版本不足时回源主库。</p>
+        </div>
+      </details>
+
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="seckill-redis-mq">深入：秒杀系统架构 →</button>
         <button class="jump-link" type="button" data-id="api-idempotency-request-id">深入：接口幂等性 →</button>
@@ -5012,28 +5195,51 @@ EXPLAIN 检查访问类型、索引和扫描行数
       <p class="lead">后端接口不只是在 Controller 中写注解。要理解 HTTP 语义、认证信息怎样传递，以及服务出问题时如何从网络、进程、端口和日志逐层定位。</p>
 
       <h2 id="interview-http-status" data-toc="HTTP 状态码">HTTP 状态码和业务码有什么区别？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>HTTP 状态码描述协议层结果，例如 200 成功、400 请求参数有误、401 未认证、403 已认证但无权限、404 资源不存在、500 服务端异常。业务码放在 JSON 中，描述项目自定义结果。直接返回 code=400 的 Result 不代表 HTTP 状态自动变成 400；需要 ResponseEntity 或异常处理机制设置实际 HTTP 状态。</p>
       </blockquote>
       <p><strong>项目联系：</strong>参数校验异常由全局处理器返回 HTTP 400，同时响应体仍保持统一 Result 结构。</p>
+        </div>
+      </details>
 
       <h2 id="interview-http-methods" data-toc="HTTP 方法">GET、POST、PUT、PATCH、DELETE 怎样选择？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>GET 用于读取资源，参数常放在路径或查询字符串中；POST 常用于创建或执行非幂等操作；PUT 通常表达对指定资源的完整更新并具有幂等语义；PATCH 表达部分更新；DELETE 删除资源。方法语义是接口契约，不应只看“能不能传参数”。敏感数据也不能仅因为放在 POST Body 就认为安全，传输保护依赖 HTTPS。</p>
       </blockquote>
+        </div>
+      </details>
 
       <h2 id="interview-auth" data-toc="Session、JWT 与 SSO">Session、JWT 和 SSO 是什么关系？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>Session 通常在服务端保存登录状态，客户端持有会话标识；JWT 把声明和签名放进令牌，服务端可在不查询会话的情况下校验，但仍要处理过期、撤销和密钥安全；SSO 是多个系统共享一次登录的目标，可以使用集中 Session、OAuth2/OIDC 等多种方案实现，SSO 不等于 JWT。</p>
       </blockquote>
       <p><strong>常见追问：</strong>Token 应从哪里读取、怎样校验、为什么退出登录后未过期 JWT 仍可能有效。</p>
+        </div>
+      </details>
 
       <h2 id="interview-https" data-toc="HTTP 与 HTTPS">HTTPS 比 HTTP 多了什么？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>HTTPS 是 HTTP 运行在 TLS 之上。TLS 通过证书验证服务端身份，协商会话密钥，并对后续数据提供加密和完整性保护，从而降低窃听和篡改风险。它不能自动修复 SQL 注入、越权或弱密码等应用层漏洞。</p>
       </blockquote>
+        </div>
+      </details>
 
       <h2 id="interview-linux-troubleshoot" data-toc="线上排查">接口突然访问失败，你怎样排查？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <pre class="flow">先确认现象：超时、拒绝、4xx 还是 5xx
   ↓
 检查域名、网络和端口是否可达
@@ -5054,6 +5260,9 @@ df -h
 free -h
 top</code></pre>
       <p>回答排查题时先分层，不要一上来就“重启服务”。重启可能暂时恢复，但也可能破坏现场；应先保留日志、时间点、请求 ID 和关键指标。</p>
+        </div>
+      </details>
+
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="sso-single-sign-on">深入：单点登录 →</button>
         <button class="jump-link" type="button" data-id="linux-common-commands">深入：Linux 后端运维 →</button>
@@ -5066,14 +5275,18 @@ top</code></pre>
     category: "Java 后端面试",
     order: 80,
     title: "面试场景题：万人群已读未读怎么设计？",
-    summary: "用群消息序号和成员已读游标计算未读数与单条消息已读名单",
+    summary: "练习会话红点、未读数、多端同步与单条消息已读名单",
     related: ["interview-answer-framework", "interview-redis-mq", "api-idempotency-request-id"],
     content: `
       <span class="article-tag">Java 后端面试 · 场景题</span>
       <h1>面试场景题：万人群已读未读怎么设计？</h1>
-      <p class="lead">先明确群聊需要显示什么：会话红点、精确未读数，还是单条消息的已读人数和名单。假设“读到第 N 条”表示此前有权看到的消息也算已读，就可以用一个游标表示每位成员的阅读进度。</p>
+      <p class="lead">一个一万人的聊天群需要显示会话红点、未读数、单条消息的已读人数和名单。假设读到第 N 条时，此前有权看到的消息都算已读，你会怎么设计？</p>
 
-      <h2 id="group-read-model" data-toc="参考回答与数据模型">给消息编号，每人保存一个游标</h2>
+      <h2 id="group-read-model" data-toc="数据模型">每条消息和每个成员要保存什么？</h2>
+      <p class="interview-hint">提示：想一想，每发一条消息是否必须给一万个人各写一条记录。</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <blockquote>
         <p>我会给群内消息分配单调递增的序号，每位成员在每个群保存一个 last_read_seq。发送时只记录消息并更新群的最新可见序号，已读时只推进当前成员的游标。这样已读状态无需在每次发消息时给一万名成员各写一行。</p>
       </blockquote>
@@ -5086,19 +5299,161 @@ top</code></pre>
         </tbody>
       </table>
       <p>消息可用 <code>(group_id, seq)</code> 唯一索引支持范围查询。消息对客户端可见的次序要和游标语义一致。如果序号较小的消息还可能晚于较大序号出现，就不能直接让客户端用较大序号标记此前全部已读。</p>
+        </div>
+      </details>
 
-      <h2 id="group-read-cursor" data-toc="多端与重试">已读游标只向前推进</h2>
+      <h2 id="group-read-cursor" data-toc="多端与重试">旧设备晚到的已读上报怎么处理？</h2>
+      <p class="interview-hint">提示：比较两台设备的上报顺序和请求到达服务端的顺序。</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <p>客户端上报已经展示到的序号。服务端校验成员身份和该序号是否在成员可见范围，再原子地更新为 <code>max(旧游标, 上报序号)</code>。同一个请求重试没有额外效果，旧设备迟到的请求也不会覆盖新设备的进度。若新成员看不到入群前的历史，就以入群时的可见上界初始化游标。</p>
+        </div>
+      </details>
 
-      <h2 id="group-read-unread" data-toc="红点与未读数">什么时候能直接用序号相减？</h2>
+      <h2 id="group-read-unread" data-toc="红点与未读数">群里最新是第 105 条，小王读到第 102 条，有几条未读？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <p>群最新消息是 105，小王读到 102。如果 103 到 105 都存在、可见且计入未读，就有三条未读。序号有空洞、消息被撤回、自己发的消息不计数或中途入群时，应按实际可见且计入未读的消息统计。只显示红点时，判断游标之后是否存在这样的消息即可。</p>
+        </div>
+      </details>
 
       <h2 id="group-read-receipts" data-toc="已读人数与名单">某条消息有哪些人已读？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <p>对序号为 103 的消息，先按产品规则确定有资格接收它的成员，再找出其中 <code>last_read_seq &gt;= 103</code> 的人。如果统计口径是发送时的成员，就需要保留成员加入、退出区间，避免用当前群成员错误统计历史消息。名单可按需分页，允许短暂延迟的已读人数可缓存。若一次读完大量历史，每条同步更新计数会放大写入。</p>
+        </div>
+      </details>
 
       <h2 id="group-read-gaps" data-toc="追问：跳读与扩展">跳到最新消息，跳过的还算未读怎么办？</h2>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
       <p>单游标只能表示阅读进度的连续前缀。如果只读了第 105 条而 103 和 104 还要保留未读，就要额外记录已读或未读区间。若产品要求任意逐条已读状态，则应按单条消息记录回执并评估存储、写入和查询开销。</p>
-      <p class="jump-row"><button class="jump-link" type="button" data-id="interview-answer-framework">复习：面试回答框架 →</button><button class="jump-link" type="button" data-id="interview-redis-mq/interview-stale-profile">另一道场景题：改名后读到旧值 →</button></p>
+        </div>
+      </details>
+
+      <p class="jump-row"><button class="jump-link" type="button" data-id="interview-answer-framework">复习：面试回答框架 →</button><button class="jump-link" type="button" data-id="interview-redis-mq/interview-stale-profile">另一道场景题：改名后读到旧值 →</button><button class="jump-link" type="button" data-id="interview-message-cache-scenarios/interview-chat-reconnect">接着练：聊天断线补消息 →</button></p>
+    `,
+  },
+  {
+    id: "interview-order-data-scenarios",
+    category: "Java 后端面试",
+    order: 90,
+    title: "面试场景练习：订单与数据库",
+    summary: "用重复下单、库存超卖和列表翻页练习 MySQL 基础",
+    related: ["interview-mysql-transaction", "api-idempotency-request-id", "seckill-redis-mq"],
+    content: `
+      <span class="article-tag">Java 后端面试 · 场景练习</span>
+      <h1>面试场景练习：订单与数据库</h1>
+      <p class="lead">先说出问题是怎样发生的，再想数据库能保证什么。想好之后展开参考答案。</p>
+
+      <h2 id="interview-duplicate-order" data-toc="重复下单">用户连点两次提交，生成了两张订单，怎么办？</h2>
+      <p class="interview-hint">提示：第一次已经写入数据库，但客户端没收到响应，此时它能判断下单成功吗？</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
+          <p>给一次下单意图分配请求 ID，重试时沿用这个 ID。数据库用 <code>(user_id, request_id)</code> 唯一约束拦住并发重复写入，已成功的请求返回原订单结果。只在前端禁用按钮挡不住超时重试。</p>
+          <p><strong>追问：</strong>如果第一次仍在处理，第二次该返回什么？可以让客户端查询原请求的状态。若同一个请求 ID 对应的参数变了，应拒绝复用。</p>
+          <p><a href="https://github.com/doocs/advanced-java/blob/main/docs/distributed-system/distributed-system-idempotency.md">参考：接口幂等性</a></p>
+        </div>
+      </details>
+
+      <h2 id="interview-stock-oversell" data-toc="库存超卖">库存只剩 1 件，两个人同时下单，怎么防超卖？</h2>
+      <p class="interview-hint">提示：画出两个请求都读到库存为 1 的时间线。</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
+          <p>把判断条件和扣减写在同一条 SQL 里。<code>UPDATE inventory SET stock = stock - 1 WHERE sku_id = ? AND stock &gt; 0</code>。受影响行数为 1 表示这次扣减成功，为 0 则没有扣到库存。</p>
+          <p><strong>追问：</strong>扣库存成功，创建订单却失败怎么办？若都在同一个数据库中，就把扣减和建单放在同一事务里，建单失败时一起回滚。</p>
+          <p class="jump-row"><button class="jump-link" type="button" data-id="seckill-redis-mq">继续学：秒杀系统与库存一致性 →</button></p>
+        </div>
+      </details>
+
+      <h2 id="interview-duplicate-page" data-toc="翻页重复">为什么订单列表的第二页出现了第一页看过的记录？</h2>
+      <p class="interview-hint">提示：第一页看到 5、4，翻下一页前来了新的订单 6。它会排在什么位置？</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
+          <p>新增记录插到最前面后，按偏移量跳过前两条会再次读到 4。可用游标分页，记住上一页最后一条的排序键，再沿相同顺序查后续记录。</p>
+          <p><strong>追问：</strong>如果多条订单的创建时间相同，游标应该带什么？用 <code>(created_at, id)</code> 共同排序和定位，唯一 ID 用来打破时间并列。</p>
+          <p><a href="https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api">参考：GitHub API 分页</a></p>
+        </div>
+      </details>
+
+      <p class="jump-row"><button class="jump-link" type="button" data-id="interview-message-cache-scenarios">下一组：缓存与消息 →</button></p>
+    `,
+  },
+  {
+    id: "interview-message-cache-scenarios",
+    category: "Java 后端面试",
+    order: 100,
+    title: "面试场景练习：缓存与消息",
+    summary: "从热点商品、积分消息与群聊重连练习高并发场景",
+    related: ["interview-order-data-scenarios", "interview-redis-mq", "interview-group-read-receipts"],
+    content: `
+      <span class="article-tag">Java 后端面试 · 场景练习</span>
+      <h1>面试场景练习：缓存与消息</h1>
+      <p class="lead">先画出请求和消息的先后顺序，试着指出哪一步出了问题。</p>
+
+      <h2 id="interview-hot-cache-expiry" data-toc="热点缓存过期">热门商品缓存刚过期，数据库压力骤增，怎么处理？</h2>
+      <p class="interview-hint">提示：看同一个商品的并发请求在缓存失效后分别去了哪里。</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
+          <p>热点 key 失效后，大量请求同时回源，这叫缓存击穿。可以合并同一 key 的回源请求，只让一个请求查数据库并重建缓存。多实例部署时要考虑协调范围，单机互斥只覆盖当前实例。</p>
+          <p><strong>追问：</strong>重建很慢，其他请求怎么办？可以限时等待或降级。若商品详情允许短暂旧数据，也可在刷新期间继续提供旧值。</p>
+          <p><a href="https://github.com/doocs/advanced-java/blob/main/docs/high-concurrency/redis-caching-avalanche-and-caching-penetration.md">参考：缓存击穿</a></p>
+        </div>
+      </details>
+
+      <h2 id="interview-duplicate-points" data-toc="积分重复发放">积分已加，确认消息前却宕机了，重投后怎么避免再加一次？</h2>
+      <p class="interview-hint">提示：区分数据库提交和向消息队列发送确认这两个动作。</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
+          <p>给积分事件一个稳定 ID。用数据库唯一约束识别同一次发放，把写入事件处理记录和增加积分放进同一个事务，事务提交后再确认消息。重投时已提交的事件可直接确认。</p>
+          <p><strong>追问：</strong>如果先单独提交去重记录，再加积分，中间宕机会怎样？重试会看到去重记录并跳过，用户反而漏领积分。</p>
+          <p><a href="https://github.com/doocs/advanced-java/blob/main/docs/high-concurrency/how-to-ensure-that-messages-are-not-repeatedly-consumed.md">参考：消息重复消费</a></p>
+        </div>
+      </details>
+
+      <h2 id="interview-order-state-rewind" data-toc="订单状态倒退">订单已经「已发货」，过几秒又变成「已支付」，为什么？</h2>
+      <p class="interview-hint">提示：事件产生的先后顺序和数据库写入的先后顺序一定一样吗？</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
+          <p>旧事件可能晚到，也可能是并行消费时先处理完了新事件。可在写数据库时检查事件版本及合法的状态迁移，避免旧状态覆盖新状态。如果每个中间事件都必须执行，应发现版本缺口后补齐或重试。</p>
+          <p><strong>追问：</strong>同一订单放进同一个消息分区就够了吗？分区内读取有序，消费者并行执行时仍可能乱序完成。</p>
+          <p><a href="https://github.com/doocs/advanced-java/blob/main/docs/high-concurrency/how-to-ensure-the-order-of-messages.md">参考：消息顺序性</a></p>
+        </div>
+      </details>
+
+      <h2 id="interview-chat-reconnect" data-toc="断线补消息">手机断网再重连，怎么补齐群消息又不重复显示？</h2>
+      <p class="interview-hint">提示：用户没打开群聊时，手机也可能已经收到了消息。</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
+          <p>客户端保存已成功同步的进度，重连时向服务端补拉之后的消息。补拉和实时推送可能重叠，用消息 ID 去重。如果消息太多，按服务端给的游标继续分页。</p>
+          <p><strong>追问：</strong>消息已经拉到手机，但人还没看，哪个进度会变？同步进度可以前移，已读进度要等客户端上报已读。</p>
+          <p><a href="https://github.com/matrix-org/matrix-spec/blob/main/data/api/client-server/sync.yaml">参考：Matrix 增量同步规范</a></p>
+        </div>
+      </details>
+
+      <h2 id="interview-feed-fanout" data-toc="关注动态">大 V 发了一条动态，怎样让所有关注者能刷到它？</h2>
+      <p class="interview-hint">提示：比较发布一条动态时的工作量，以及一个粉丝打开页面时的工作量。</p>
+      <details class="interview-answer">
+        <summary>查看参考答案</summary>
+        <div class="interview-answer-content">
+          <p>写时推送是在发帖后把动态 ID 加到粉丝时间线，首页读起来快，粉丝越多写入越多。读时拉取是在打开首页时读取并合并关注对象的动态，发布省写入，但首页要做更多读取和排序。</p>
+          <p><strong>追问：</strong>普通用户和百万粉丝账号可以分别怎样处理？可以对普通用户用写时推送，对超大账号用读时拉取，首页再合并两个结果。</p>
+          <p><a href="https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/twitter/README.md">参考：System Design Primer 时间线设计</a></p>
+        </div>
+      </details>
+
+      <p class="jump-row"><button class="jump-link" type="button" data-id="interview-group-read-receipts">关联题：万人群已读未读 →</button><button class="jump-link" type="button" data-id="interview-order-data-scenarios">上一组：订单与数据库 →</button></p>
     `,
   },
   {
