@@ -594,8 +594,176 @@ void page_withFilters_passesBoundDtoToService() throws Exception {
       <p>学习记录中的实验保持请求值 3 和 lili，把断言预期临时改为 99 和 zhangsan，同一轮报告了页码和用户名两处失败。练习结束后恢复真实接口预期，再运行用例。</p>
 
       <h2 id="test-opt-progress" data-toc="已完成与下一步">从测试组织走向集成测试</h2>
-      <p>复盘已完成测试前准备数据、非法页码与条数的参数化、DTO 五字段捕获和多失败汇总。接下来补充 <code>@AfterEach</code>、<code>@AfterAll</code> 与类级初始化和清理，整理测试数据辅助方法及命名，再用 <code>@SpringBootTest</code> 与隔离的测试数据库验证 Controller、Service、MyBatis SQL 和事务。</p>
-      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-pagination">上一篇：分页查询与 DTO 绑定 →</button><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics/unit-boundaries">复习：测试范围 →</button><button class="jump-link" type="button" data-id="springboot-transaction-propagation">后续：验证真实事务 →</button></p>
+      <p>复盘已完成测试前准备数据、非法页码与条数的参数化、DTO 五字段捕获和多失败汇总。后续学习记录已覆盖 Spring Boot 上下文、真实 Mapper CRUD 和主键回填。测试结束后的独立回滚核验仍待确认。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-pagination">上一篇：分页查询与 DTO 绑定 →</button><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics/unit-boundaries">复习：测试范围 →</button><button class="jump-link" type="button" data-id="springboot-mybatis-integration-tests">下一篇：真实数据库集成测试 →</button><button class="jump-link" type="button" data-id="springboot-transaction-propagation">后续：验证真实事务 →</button></p>
+    `,
+  },
+  {
+    id: "springboot-mybatis-integration-tests",
+    category: "Spring Boot 开发",
+    order: 170,
+    title: "Spring Boot 集成测试：用真实 MySQL 验证 MyBatis CRUD",
+    summary: "从 contextLoads 到 Mapper 代理、主键回填和事务外核验",
+    related: ["interview-mybatis-integration-tests", "springboot-multi-condition-query", "springboot-transaction-bean"],
+    content: `
+      <span class="article-tag">Spring Boot 开发 · 项目测试复盘</span>
+      <h1>Spring Boot 集成测试：用真实 MySQL 验证 MyBatis CRUD</h1>
+      <p class="lead">在 user-admin 中，先让 Spring 加载应用，再让真实的 UserMapper 执行 SQL。沿着一次新增操作，可以分别检查受影响行数、回填的主键和重新查出的字段。</p>
+
+      <h2 id="db-test-context" data-toc="容器与测试边界">第一步：加载应用上下文</h2>
+      <p>ApplicationContext 是 Spring 管理 Bean 的容器。此前的 @WebMvcTest 加载 MVC 切片并模拟 UserService。本阶段使用 @SpringBootTest，测试从 Mapper 开始，实际经过 MyBatis、JDBC 和 MySQL。测试类可以注入真实 Service，但直接调用 Mapper 的用例只覆盖数据访问链路。</p>
+      <pre><code>@SpringBootTest
+@Transactional
+class UserAdminApplicationTests {
+    @Autowired UserMapper userMapper;
+
+    @Test
+    void contextLoads() { }
+
+    @Test
+    void testList() {
+        List&lt;User&gt; users = userMapper.selectALL();
+        assertNotNull(users);
+    }
+}</code></pre>
+      <p>在 user-admin 的测试配置中指定独立 MySQL 测试库，使用 Spring 的 <code>org.springframework.transaction.annotation.Transactional</code> 和 JUnit Jupiter 的 Assertions。空方法通过表示当前配置能加载容器。调用 <code>selectALL()</code> 才实际执行这条查询，空表也可以返回非 null 的空列表。</p>
+
+      <h2 id="db-test-mapper" data-toc="Mapper 代理与映射">接口方法如何查到 User？</h2>
+      <p>MyBatis 为注册的 Mapper 接口创建代理。调用 selectById(id) 时，代理找到方法对应的 SQL，用 <code>#<built-in function id></code> 绑定 JDBC 参数，再把结果列 id、username、age 映射到 User 的同名属性。列名与属性名不同可用 SQL 别名或 resultMap 显式映射。</p>
+      <p>条件查询用 <code>&lt;script&gt;</code> 解析注解中的动态 SQL，<code>&lt;if&gt;</code> 选择条件，<code>&lt;where&gt;</code> 按需生成 WHERE 并处理开头的 AND／OR。多参数方法逐一写明 <code>@Param("minAge")</code> 等名称，SQL 就能按名称取值。</p>
+      <p>Lombok 的 @Data 为实体生成访问器等方法。直接调用 Mapper 不会触发 Controller 上的 @Valid。读取 List 时，<code>users.forEach(System.out::println)</code> 会逐个打印元素；要找指定用户并提前结束，可在增强 for 循环里用 equals 比较用户名，命中后 break。输出便于观察，字段是否正确要用断言检查。</p>
+
+      <h2 id="db-test-insert" data-toc="新增与主键回填">插入成功后，用哪一个 ID 查回来？</h2>
+      <pre><code>@Insert("insert into user (username, age) values (#{username}, #{age})")
+@Options(useGeneratedKeys = true, keyProperty = "id")
+int insert(User user);</code></pre>
+      <p>MySQL 的 AUTO_INCREMENT 生成主键。insert 返回受影响行数；MyBatis 从 JDBC 获取生成的键并写到传入对象的 id 属性。下面沿用记录中的测试方法，UUID 提供本次测试的唯一用户名。</p>
+      <pre><code>@Test
+public void testInsert() {
+
+    User user = new User();
+
+    String username = "test_" +
+            UUID.randomUUID().toString().replace("-", "");
+
+    user.setUsername(username);
+    user.setAge(21);
+
+    int rows = userMapper.insert(user);
+
+    assertEquals(1, rows);
+    assertNotNull(user.getId());
+
+    User savedUser = userMapper.selectById(user.getId());
+
+    assertNotNull(savedUser);
+    assertEquals(username, savedUser.getUsername());
+    assertEquals(21, savedUser.getAge());
+}</code></pre>
+
+      <h2 id="db-test-changes" data-toc="修改与删除">用本次新增的数据验证 UPDATE 和 DELETE</h2>
+      <p>两个测试各自先新增用户、断言插入一行并取得回填 ID。这样即使换了测试库或调整测试顺序，也不依赖恰好存在的 3 号用户。</p>
+      <table><thead><tr><th>用例</th><th>写入后重新查询</th><th>关键断言</th></tr></thead><tbody>
+        <tr><td>UPDATE</td><td>修改 username 和 age，调用 update(user)，再按原 ID 查询</td><td>更新 1 行；新查出的用户名与年龄都等于修改后的值</td></tr>
+        <tr><td>DELETE</td><td>调用 deleteById(id)，再用 selectById(id) 查同一条记录</td><td>删除 1 行；单条查询结果为 null</td></tr>
+      </tbody></table>
+      <details class="interview-answer"><summary>查看 UPDATE 示例</summary><div class="interview-answer-content"><pre><code>@Test
+public void testUpdate() {
+
+    User user = new User();
+
+    String username = "test_" +
+            UUID.randomUUID().toString().replace("-", "");
+
+    user.setUsername(username);
+    user.setAge(21);
+
+    int insertRows = userMapper.insert(user);
+
+    assertEquals(1, insertRows);
+    assertNotNull(user.getId());
+
+    user.setUsername(username + "_update");
+    user.setAge(22);
+
+    int updateRows = userMapper.update(user);
+
+    assertEquals(1, updateRows);
+
+    User updateUser = userMapper.selectById(user.getId());
+
+    assertNotNull(updateUser);
+    assertEquals(user.getUsername(), updateUser.getUsername());
+    assertEquals(22, updateUser.getAge());
+}</code></pre></div></details>
+      <details class="interview-answer"><summary>查看 DELETE 示例</summary><div class="interview-answer-content"><pre><code>@Test
+public void testDelete() {
+
+    User user = new User();
+
+    user.setUsername("test_" +
+            UUID.randomUUID().toString().replace("-", ""));
+    user.setAge(21);
+
+    int insertRows = userMapper.insert(user);
+
+    assertEquals(1, insertRows);
+    assertNotNull(user.getId());
+
+    int deleteRows = userMapper.deleteById(user.getId());
+
+    assertEquals(1, deleteRows);
+
+    User selectUser = userMapper.selectById(user.getId());
+
+    assertNull(selectUser, "用户删除后，查询结果应该为 null");
+}</code></pre></div></details>
+
+      <h2 id="db-test-rollback" data-toc="验证事务回滚">测试方法结束后，记录还在吗？</h2>
+      <p>Spring Test 默认在每个带测试事务的方法结束后回滚参与该事务的写入。同一事务能查到自己刚插入的用户，因此方法内的查询只能验证写入当时可见。@Commit 或 @Rollback(false) 会让测试事务提交。独立提交的 REQUIRES_NEW 或其他线程中的写入有各自的事务边界。</p>
+      <p>Service 的业务事务在正常返回时通常提交，发生符合回滚规则的异常时回滚。测试方法的默认回滚可能掩盖业务提交行为。验证业务回滚要触发真实业务边界，再从事务外检查最终数据。</p>
+      <ol><li>运行 testRollback()，插入带唯一标记的用户，断言 insert 返回 1、回填 ID 非空，并记录实际用户名。</li><li>等测试结束，从独立 MySQL 客户端连接同一测试库，按该用户名查询。</li><li>默认回滚的预期是 0 行。附件未保留该独立查询结果，本项仍待确认。</li></ol>
+
+      <h2 id="db-test-review" data-toc="排错与阶段进度">从失败的断言定位问题</h2>
+      <ul><li>assertNotNull(users) 编译失败：检查静态导入是否来自 org.junit.jupiter.api.Assertions。</li><li>插入一行但 ID 为空：检查列的自增设置、useGeneratedKeys 和 keyProperty，再使用该 ID 查询。</li><li>年龄预期为 20、实际为 21：对照本次准备的数据和重新查询的字段。UUID 去横线使用 replace("-", "")。</li></ul>
+      <p>根据学习记录，contextLoads() 已通过，selectALL() 已查到真实数据，并完成了主键回填及增删改测试。测试专项到此收尾，后续回到 Java 基础、Spring、MyBatis／MySQL 和业务功能开发，结合项目继续练习面试表达。</p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="interview-mybatis-integration-tests">练习：本阶段面试题 →</button><button class="jump-link" type="button" data-id="springboot-junit-mockito-test-optimization">上一篇：JUnit 与 Mockito 测试优化 →</button><button class="jump-link" type="button" data-id="springboot-transaction-propagation">对照：事务传播 →</button></p>
+    `,
+  },
+  {
+    id: "interview-mybatis-integration-tests",
+    category: "Java 后端面试",
+    order: 110,
+    title: "面试练习：Spring Boot 集成测试与真实数据库",
+    summary: "围绕 Mapper、真实 SQL、主键和测试事务练习八道题",
+    related: ["springboot-mybatis-integration-tests", "interview-spring-boot"],
+    content: `
+      <span class="article-tag">Java 后端面试 · 面试练习</span>
+      <h1>面试练习：Spring Boot 集成测试与真实数据库</h1>
+      <h2 id="db-quiz-scope" data-toc="测试切片">@WebMvcTest 与 @SpringBootTest 怎么选？</h2>
+      <details class="interview-answer"><summary>查看参考答案</summary><div class="interview-answer-content"><p>只验证 MVC 路由、绑定和响应时，可加载 Web 切片并模拟 Service。需要应用配置及真实组件协作时，用 @SpringBootTest，再调用要验证的组件。</p></div></details>
+
+      <h2 id="db-quiz-context" data-toc="应用上下文">contextLoads() 通过说明 ApplicationContext 做到了什么？</h2>
+      <details class="interview-answer"><summary>查看参考答案</summary><div class="interview-answer-content"><p>Spring 成功加载了当前测试配置所需的应用上下文，完成了相关 Bean 的创建和依赖注入。要验证某条 Mapper SQL，还要调用对应的方法。</p></div></details>
+
+      <h2 id="db-quiz-proxy" data-toc="Mapper 代理">UserMapper 只有接口，谁执行 selectById？</h2>
+      <details class="interview-answer"><summary>查看参考答案</summary><div class="interview-answer-content"><p>MyBatis 生成的代理查找与接口方法对应的 SQL 映射，绑定参数并执行 SQL，再将结果映射为 User。</p></div></details>
+
+      <h2 id="db-quiz-key" data-toc="自增主键">insert 返回 1，怎样取得这条记录的真实主键？</h2>
+      <details class="interview-answer"><summary>查看参考答案</summary><div class="interview-answer-content"><p>1 表示受影响行数。对自增主键配置 @Options(useGeneratedKeys = true, keyProperty = "id") 后，读取传入 User 的 id，并用它回查数据库，核对写入的字段。</p></div></details>
+
+      <h2 id="db-quiz-real-db" data-toc="真实数据库">什么问题需要让测试连接真实 MySQL 才能发现？</h2>
+      <details class="interview-answer"><summary>查看参考答案</summary><div class="interview-answer-content"><p>例如 SQL 不符合 MySQL 方言、列映射错误、数据库约束或自增键回填配置不正确。用 Mock Mapper 返回预设对象不会执行这些操作。</p></div></details>
+
+      <h2 id="db-quiz-acid" data-toc="事务与 ACID">如果转账扣款成功、入账失败，事务有什么作用？ACID 如何解释？</h2>
+      <details class="interview-answer"><summary>查看参考答案</summary><div class="interview-answer-content"><p>同一事务的两步操作一起提交或回滚，这是原子性。一致性指正确的事务及约束维持业务规则，隔离性约束并发事务间的可见性，持久性保证已提交的结果可恢复。</p></div></details>
+
+      <h2 id="db-quiz-rollback" data-toc="测试事务">方法内查得到刚插入的用户，怎样验证测试最后是否回滚？</h2>
+      <details class="interview-answer"><summary>查看参考答案</summary><div class="interview-answer-content"><p>Spring Test 默认回滚测试事务。先记录唯一用户名，等方法结束后从独立连接查询同一测试库，默认回滚时应查不到该记录。</p></div></details>
+
+      <h2 id="db-quiz-commit" data-toc="提交测试数据">什么时候 @Transactional 测试写入的数据会留下来？</h2>
+      <details class="interview-answer"><summary>查看参考答案</summary><div class="interview-answer-content"><p>显式使用 @Commit 或 @Rollback(false) 可提交测试事务。若业务另开并提交了独立事务，它的写入也不会被外层测试回滚撤销。</p></div></details>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mybatis-integration-tests">回到项目：真实数据库 CRUD →</button></p>
     `,
   },
   {
@@ -3910,7 +4078,7 @@ public void outer(Long id1, Long id2) {
         <li>分别查看控制台异常和数据库最终状态，HTTP 200/500 不能单独证明事务结果。</li>
         <li>每轮恢复测试数据，只改变一个传播配置，避免实验条件互相干扰。</li>
       </ol>
-      <p>后续已完成 Service 单元测试、MockMvc Web 测试及参数化与多字段断言练习。下一阶段用真实事务资源验证提交与回滚，并检查测试方法自身的自动回滚是否掩盖业务行为。</p>
+      <p>后续已完成 Service 单元测试、MockMvc Web 测试及参数化与多字段断言练习。后续真实 Mapper CRUD 已完成。默认测试回滚在独立 MySQL 客户端的核验仍待确认。</p>
       <p class="jump-row">
         <button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">下一阶段：JUnit 5 与 Mockito →</button>
         <button class="jump-link" type="button" data-id="springboot-junit-mockito-test-optimization">测试进阶：参数化与多字段断言 →</button>
@@ -4932,7 +5100,7 @@ a.equals(b)  // true：内容相同</code></pre>
       <p><strong>回答思路：</strong>先说测试对象和隔离边界，再举“ID 为空时 Mapper 不应调用”或“用户不存在时不能更新”的例子。@Mock 创建模拟依赖；@InjectMocks 尝试创建被测对象并注入，不等于启动 Spring 容器。assertThrows 验证异常，verify 验证交互，两者不能互相替代。</p>
       <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-junit-mockito-basics">基础：测试结构与范围 →</button><button class="jump-link" type="button" data-id="springboot-service-crud-tests">项目：CRUD 测试场景 →</button></p>
       <p><strong>MockMvc 追问：</strong>@WebMvcTest 加载 Web 切片，@MockitoBean 提供 Spring 上下文中的模拟依赖。参数校验失败应验证 Service 未被调用；Service 抛业务异常用 thenThrow，并检查 HTTP 状态与 JSON 业务码。前者和后者需要不同的交互断言。</p>
-      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-validation">实战：校验与全局异常测试 →</button></p>
+      <p class="jump-row"><button class="jump-link" type="button" data-id="springboot-mockmvc-validation">实战：校验与全局异常测试 →</button><button class="jump-link" type="button" data-id="interview-mybatis-integration-tests">练习：集成测试与真实数据库 →</button></p>
         </div>
       </details>
 
